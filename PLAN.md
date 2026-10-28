@@ -1,230 +1,268 @@
-# RentAgent — אפיון ותוכנית עבודה (שלב 0)
+# RentAgent — אפיון ותוכנית עבודה (גרסה 2: Self-Hosted)
 
-> סטטוס: **טיוטה לאישור**. אין עדיין קוד. לאחר אישור/תיקון, נבנה לפי השלבים בסעיף 12.
-> כל מזהה מודל, מחיר או יכולת של ספק AI — **דורש אימות מול התיעוד הרשמי** לפני פרודקשן ולכן לא יקודד קשיח בקוד (ראו "Model Registry").
+> סטטוס: **טיוטה לאישור**. אין עדיין קוד.
+> שינוי מגרסה 1: המוצר הוא **תוכנה שהלקוח מתקין על השרת שלו** (Self-hosted / White-label), ולא שירות ענן מרכזי.
+> כל מזהה מודל, מחיר או יכולת של ספק AI — **דורש אימות מול התיעוד הרשמי**, ולכן נשמר בהגדרות המערכת ולא בקוד.
 
 ---
 
 ## 1. סיכום ההבנה
 
-פלטפורמת Marketplace + Runtime לסוכני AI:
+אתה מוכר מוצר. הלקוח שלך (**המפעיל / Operator**) מתקין אותו על השרת שלו, מכניס את מפתחות ה־API של ספקי ה־AI שהוא רוצה, ומציע למשתמשים שלו (**משתמשי קצה**) להשתמש בסוכנים או לשכור אותם.
 
-- **שוכרים (Renters)** — אנשים/עסקים ששוכרים סוכן מוכן ("סוכן מחקר שוק", "סוכן גיוס", "סוכן תמיכת לקוחות", "סוכן דוחות", "סוכן קוד") ומפעילים אותו למשימה, לפי זמן או במנוי.
-- **יוצרים (Creators)** — בונים סוכנים (No-code builder או API), מפרסמים בחנות, ומקבלים חלק מההכנסה.
-- **הפלטפורמה** — מריצה את הסוכנים בצורה מאובטחת מול כל ספקי ה־AI, מודדת עלויות, מחייבת, מנטרת ומגינה.
+| תפקיד | מי | מה עושה |
+|-------|----|---------|
+| **Vendor** | אתה | מפתח, מוכר רישיונות, מפרסם עדכונים |
+| **Operator** | הלקוח שמתקין | מתקין, מגדיר ספקים ומפתחות, בונה ומנהל סוכנים, קובע מחירים ומיתוג |
+| **Agent Manager** (אופציונלי) | צוות של המפעיל | בונה ומתחזק סוכנים בלי גישה להגדרות מערכת |
+| **End User** | הלקוחות של המפעיל | שוכרים ומפעילים סוכנים, משלמים למפעיל |
 
-ערך עסקי: עמלה על כל השכרה (take rate), מנויים, ו־markup על צריכת טוקנים (או BYOK — המשתמש מביא מפתח משלו).
+שלושת עמודי התווך שביקשת:
+1. **התקנה על שרת הלקוח לפי דרישות מוגדרות** — מסמך דרישות + מתקין + אשף הגדרה ראשונית.
+2. **המפעיל מכניס את ה־API שהוא רוצה** — לוח ספקים: מפעילים ספק, מכניסים מפתח, בוחרים אילו מודלים חשופים לאילו משתמשים ובאיזה מחיר.
+3. **מערכת שאחראית על הסוכנים + התאמות גמישות** — Agent Control Center (ניהול, ניטור, מכסות, מדיניות, סוכן מנתב), ושכבת התאמות (מיתוג, תכונות, תמחור, כלים, תוספים) בלי לגעת בקוד.
 
 ---
 
-## 2. הנחות עבודה ושאלות פתוחות
+## 2. הנחות ושאלות פתוחות
 
-### הנחות (אם לא תגיד אחרת)
-1. קהל יעד: ישראל + בינלאומי → עברית (RTL) ואנגלית מהיום הראשון; GDPR + חוק הגנת הפרטיות (תיקון 13).
-2. Web App רספונסיבי (PWA). אפליקציית מובייל נייטיב — שלב מאוחר.
-3. תשלומים דרך Stripe (+ Stripe Connect לתשלום ליוצרים). סליקה ישראלית (Cardcom/Tranzila וכו') — אופציונלי, **דורש אימות** יכולות API.
-4. פריסה ראשונית: שרת יחיד/ענן מנוהל (Docker), ניתן להתרחבות.
-5. MVP תוך ~6 שלבים; כל שלב נמסר כקוד מלא שרץ.
+### הנחות
+1. השרת של הלקוח הוא VPS או שרת ייעודי עם Linux ו־Docker (ראו סעיף 4). כל הרכיבים רצים אצלו; אין תלות בענן שלך.
+2. עברית (RTL) ואנגלית מובנות; המפעיל יכול להוסיף שפות.
+3. כל המידע של המפעיל ושל המשתמשים שלו נשאר על השרת שלו. אצלך (Vendor) עוברים רק בדיקת רישיון ובדיקת עדכונים — בלי מידע אישי.
+4. תשלומים: מודולים נפרדים (Stripe ראשון), כך שהמפעיל יכול גם לכבות תשלומים ולהשתמש במערכת לשימוש פנימי בלבד.
 
 ### שאלות (עד 5)
-1. **מודל תמחור** — מה חשוב לך ב־MVP: תשלום לפי משימה, לפי שעה, מנוי חודשי, Credits, או כולם?
-2. **מי בונה סוכנים ב־MVP** — רק אתה (צוות הפלטפורמה) או כבר יוצרים חיצוניים עם חלוקת הכנסות?
-3. **BYOK** — לאפשר למשתמש להביא מפתח API משלו (OpenAI/Anthropic וכו'), או שהפלטפורמה משלמת ומחייבת?
-4. **פעולות בעולם האמיתי** — האם הסוכנים יורשו לשלוח מיילים/הודעות, לגלוש באתרים, להריץ קוד, לבצע רכישות? (משפיע מאוד על אבטחה ועל אישורי Human-in-the-loop.)
-5. **תקציב ואירוח** — יש העדפה (Vercel/AWS/GCP/Hetzner/שרת קיים)? ותקציב חודשי משוער לתשתית?
+1. **סוג השרת של הלקוחות** — הם יכולים להריץ Docker על VPS (מומלץ מאוד), או שחלק מהם ב־Shared hosting / cPanel עם PHP בלבד? זה משנה את כל הסטאק (ראו סעיף 6).
+2. **מודל מכירה ורישוי** — רישיון חד־פעמי, שנתי או חודשי? בדיקת License key אונליין? עדכונים כלולים לתקופה מוגבלת?
+3. **מי בונה סוכנים בתוך התקנה** — רק המפעיל והצוות שלו, או שגם משתמשי קצה ויוצרים חיצוניים יכולים לפרסם סוכנים (Marketplace פנימי עם חלוקת הכנסות)?
+4. **איך משתמשי הקצה משלמים למפעיל** — אילו שערי תשלום נדרשים (Stripe, PayPal, סליקה ישראלית כמו Cardcom/Tranzila — **דורש אימות API**)? או שזה בעיקר לשימוש פנימי בארגון?
+5. **פעולות בעולם האמיתי** — האם סוכנים יוכלו לשלוח מיילים והודעות, לגלוש, להריץ קוד, לבצע רכישות? (משפיע על Sandbox ועל חובת אישור אנושי.)
 
 ---
 
-## 3. פיצ'רים (מה שמבוקש בשוק — 2026)
+## 3. מה המוצר כולל
 
-סימון: **[MVP]** = בשלבים 1–6 · **[V2]** = אחרי השקה · **[V3]** = Enterprise
+סימון: **[MVP]** = גרסה ראשונה למכירה · **[V2]** · **[V3]**
 
-### Marketplace
-- קטלוג סוכנים עם קטגוריות, חיפוש, סינון, דירוגים וביקורות מאומתות (רק מי ששכר) **[MVP]**
-- עמוד סוכן: יכולות, כלים שהוא משתמש בהם, הרשאות נדרשות, מחיר משוער, דוגמאות פלט **[MVP]**
-- "Try before you rent" — הרצת ניסיון מוגבלת **[MVP]**
-- תגי אמון: "Verified creator", "Security reviewed" **[V2]**
+### 3.1 התקנה ותפעול
+- סקריפט התקנה בפקודה אחת: בודק דרישות, מייצר סודות, מרים Docker Compose **[MVP]**
+- אשף הגדרה ראשונית בדפדפן: מנהל ראשי + MFA, דומיין, מייל (SMTP), מפתח רישיון, ספק AI ראשון **[MVP]**
+- HTTPS אוטומטי (Caddy + Let's Encrypt) **[MVP]**
+- עדכון בפקודה אחת עם גיבוי אוטומטי לפני ההרצה, migrations והחזרה לגרסה הקודמת **[MVP]**
+- גיבוי ושחזור (DB + קבצים), כולל אפשרות לגיבוי ל־S3 חיצוני **[MVP]**
+- בדיקת תקינות ודף מערכת: גרסה, שירותים, דיסק, תור, ספקים **[MVP]**
+- בדיקת עדכונים והודעה למפעיל **[V2]**
 
-### השכרה ותמחור
-- מודלים: Per-task (מחיר קבוע), Per-hour/מטר זמן, Subscription, Credits/Usage **[MVP: per-task + credits]**
-- אומדן עלות לפני הרצה + תקרת הוצאה (Budget cap) לכל השכרה **[MVP]**
-- Outcome-based: חיוב רק אם המשימה הושלמה/אושרה, החזר אוטומטי בכישלון **[V2]**
-- Escrow ליוצרים עד אישור הלקוח **[V2]**
+### 3.2 ניהול ספקי AI (המפעיל מכניס API)
+- תמיכה מובנית: OpenAI, Anthropic, Google Gemini, xAI, Mistral, Cohere, DeepSeek, Groq, Together, Fireworks, Perplexity, AWS Bedrock, Azure OpenAI, OpenRouter — **דורש אימות לכל ספק** **[MVP]**
+- **"Custom OpenAI-compatible"** — כל ספק או שרת שתואם ל־OpenAI API (vLLM, LM Studio, Ollama, שרתים פנימיים): מכניסים Base URL ומפתח **[MVP]**
+- מודלים מקומיים (Ollama) על אותו שרת או על שרת GPU נפרד **[MVP דרך Custom]**
+- כפתור "בדיקת חיבור", ייבוא רשימת מודלים מהספק (כשהספק תומך בזה), ועריכה ידנית של מחירים ויכולות **[MVP]**
+- כמה מפתחות לכל ספק (rotation או חלוקת עומס), מגבלת הוצאה לכל מפתח **[MVP]**
+- הגדרה לכל מודל: גלוי או מוסתר, אילו תוכניות או קבוצות משתמשים מקבלות אותו, מחיר למשתמש (עלות + Markup) **[MVP]**
+- Fallback chain ו־routing: "הזול ביותר שמתאים", "המהיר ביותר", "קבוע" **[MVP]**
+- BYOK למשתמשי קצה — אופציה שהמפעיל מדליק או מכבה **[V2]**
+- Kill-switch לספק או למודל **[MVP]**
 
-### Runtime של הסוכן
-- כל ספקי ה־AI דרך שכבה אחידה + Fallback אוטומטי בין ספקים + Model routing לפי עלות/איכות **[MVP]**
-- Streaming של תשובות וצעדים בזמן אמת **[MVP]**
-- Tool use / Function calling **[MVP]**
-- **MCP** (Model Context Protocol) — חיבור כלים חיצוניים סטנדרטיים **[MVP: client]**
-- Knowledge base / RAG — העלאת מסמכים לסוכן (pgvector) **[MVP]**
-- זיכרון ארוך טווח לכל השכרה **[V2]**
-- Web search + קריאת דפים **[MVP]**
-- Code interpreter בסנדבוקס מבודד **[V2]**
-- Browser automation / Computer use בסנדבוקס **[V2]**
-- Multi-agent workflows (סוכן מנהל + סוכני משנה), Workflow builder ויזואלי **[V2]**
-- Human-in-the-loop: אישור לפני פעולה רגישה (שליחת מייל, תשלום, מחיקה) **[MVP]**
-- משימות מתוזמנות (Cron) ו־Triggers (Webhook, מייל נכנס) **[V2]**
-- Background jobs ארוכים עם התקדמות, עצירה והמשך **[MVP]**
+### 3.3 Agent Control Center — המערכת שאחראית על הסוכנים
+- **בניית סוכנים בלי קוד:** הנחיות, מודל או מדיניות מודל, כלים, ידע (RAG), טופס קלט, פורמט פלט, תמחור **[MVP]**
+- **תבניות מוכנות** להתקנה בלחיצה: תמיכת לקוחות, מחקר, כתיבת תוכן, ניתוח מסמכים, סיכום פגישות, SDR, דוחות **[MVP: 5–8 תבניות]**
+- ייבוא וייצוא סוכן כקובץ JSON — כדי להעביר בין התקנות **[MVP]**
+- גרסאות, Preview, פרסום, החזרה לגרסה קודמת **[MVP]**
+- **מדיניות לכל סוכן:** מקסימום צעדים, טוקנים ועלות לריצה, כלים מותרים, דומיינים מותרים, פעולות שמחייבות אישור אנושי **[MVP]**
+- **סוכן מנתב (Router):** המשתמש כותב מה הוא צריך, והמערכת בוחרת את הסוכן המתאים או מציעה אותו **[V2]**
+- **Supervisor / Multi-agent:** סוכן מנהל שמחלק משימה לסוכני משנה **[V2]**
+- **ניטור:** Trace לכל ריצה (צעדים, כלים, טוקנים, עלות, זמן), שיעור הצלחה, דירוג, עלות ממוצעת, התראות על כשלים **[MVP]**
+- **בקרה:** השהיה או כיבוי של סוכן, ביטול ריצות פעילות, מכסות לפי משתמש, תוכנית או סוכן **[MVP]**
+- אישור אנושי (Human-in-the-loop) — ע"י המשתמש או ע"י המפעיל, לפי הגדרה **[MVP]**
+- Evals: סט בדיקות לסוכן לפני פרסום **[V2]**
+- משימות מתוזמנות ו־Triggers (Webhook, מייל נכנס) **[V2]**
+- זיכרון ארוך טווח לכל משתמש **[V2]**
 
-### ערוצים
-- צ'אט בווב **[MVP]** · Widget להטמעה באתר **[V2]** · WhatsApp / Telegram / Slack / Email **[V2]** · Voice agent **[V3]**
+### 3.4 כלים לסוכנים
+- מובנים: Web search (ספק לבחירת המפעיל), Fetch עם הגנת SSRF, קריאת קבצים שהועלו, מחשבון, תאריך ושעה **[MVP]**
+- **HTTP Tool / OpenAPI:** המפעיל מייבא OpenAPI spec או מגדיר endpoint, והוא הופך לכלי — כך מחברים CRM, ERP או מערכת פנימית בלי קוד **[MVP]**
+- **MCP servers:** המפעיל מוסיף שרתי MCP (HTTP) והכלים שלהם זמינים לסוכנים **[MVP]**
+- שליחת מייל ו־Webhook יוצא (עם אישור אנושי כברירת מחדל) **[MVP]**
+- Code interpreter ודפדפן בסביבה מבודדת **[V2]**
 
-### Creator Studio
-- No-code Agent Builder: Prompt, מודל, כלים, ידע, משתני קלט, טופס קלט למשימה **[MVP]**
-- גרסאות (versioning) + Preview + פרסום **[MVP]**
-- Evals: סט בדיקות אוטומטי לפני פרסום **[V2]**
-- דשבורד הכנסות + Payouts (Stripe Connect) **[V2]**
-- API/SDK ליוצרים מתקדמים **[V3]**
+### 3.5 התאמות גמישות (בלי לגעת בקוד)
+- **מיתוג (White-label):** שם, לוגו, Favicon, צבעים (Design tokens עם בדיקת ניגודיות אוטומטית), פונט, דומיין, תבניות מייל, הסתרת "Powered by" (לפי רישיון) **[MVP]**
+- **שפות:** עריכת כל המחרוזות מהממשק, הוספת שפה, ברירת מחדל ו־RTL/LTR **[MVP]**
+- **Feature flags:** הדלקה וכיבוי של מודולים — Marketplace, הרשמה פתוחה או בהזמנה, תשלומים, העלאת קבצים, BYOK, API ציבורי, ביקורות **[MVP]**
+- **תמחור:** תוכניות (Free/Pro/Business — שמות ומחירים לבחירה), Credits, מחיר לכל סוכן (לפי משימה, לפי זמן, מנוי), מטבע, מע"מ **[MVP]**
+- **משתמשים:** שדות מותאמים בהרשמה, קבוצות, תפקידים מותאמים עם הרשאות מפורטות **[V2]**
+- **דפים:** עריכת דף הבית, FAQ ודפים משפטיים מתבניות **[MVP]**
+- **Webhooks יוצאים** לאירועים (משתמש נרשם, ריצה הסתיימה, תשלום התקבל) — לחיבור Zapier, Make או n8n **[MVP]**
+- **CSS ו־HTML מותאמים** — מוגבל ומסונן (רק CSS, בלי JS) **[V2]**
+- **מערכת תוספים (Plugins):** הרחבות שרצות כשירות נפרד בקונטיינר, ומדברות עם המערכת דרך API או MCP — לא קוד שרץ בתוך האפליקציה **[V3]**
 
-### Observability ועלויות
-- Trace מלא לכל ריצה: צעדים, קריאות כלים, טוקנים, עלות, זמן **[MVP]**
-- דשבורד הוצאות למשתמש + התראות על תקציב **[MVP]**
-- Admin: ניטור ספקים, שיעורי כשל, עלות לפי ספק **[MVP]**
+### 3.6 חוויית משתמש הקצה
+- קטלוג סוכנים, עמוד סוכן, ניסיון חינם מוגבל **[MVP]**
+- הפעלת משימה בטופס או בצ'אט, Streaming של צעדים, אישור פעולות, הורדת תוצרים **[MVP]**
+- ארנק Credits, היסטוריה וחשבוניות, תקרת הוצאה **[MVP]**
+- הגדרות: פרופיל, 2FA, Sessions, ייצוא ומחיקת מידע **[MVP]**
+- Widget להטמעה באתר של המפעיל, WhatsApp, Telegram, Slack **[V2]**
+- API ציבורי עם API keys **[V2]**
 
-### צוותים ו־Enterprise
-- Organizations, תפקידים (Owner/Admin/Member/Viewer) **[MVP בסיסי]**
-- SSO (SAML/OIDC), Audit log מלא, Data residency, White-label **[V3]**
-- Public API + API keys למשתמשים **[V2]**
-
-### Trust & Safety
-- Guardrails: חסימת Prompt injection בסיסית, סינון תוכן, PII redaction בלוגים **[MVP]**
-- Moderation לסוכנים שמפורסמים (בדיקה ידנית + אוטומטית) **[MVP]**
-- Rate limits, Kill-switch לסוכן/ספק **[MVP]**
+### 3.7 רישוי (צד ה־Vendor)
+- License key שנבדק בהתקנה ואחת לתקופה; עבודה אופליין לתקופת חסד; Tiers לפי רישיון (כמות משתמשים, White-label, מודולים) **[MVP]**
+- שרת רישוי ועדכונים קטן אצלך (Vendor) **[MVP]**
+- כל המידע שעובר אליך: מפתח רישיון, דומיין, גרסה. בלי מידע של משתמשים.
 
 ---
 
-## 4. User Stories (MVP)
+## 4. דרישות שרת להתקנה (טיוטה)
+
+> המספרים הם הערכה ראשונית. יאומתו בבדיקות עומס בשלב 7.
+
+| | מינימום (עד ~50 משתמשים פעילים) | מומלץ (עד ~500) |
+|---|---|---|
+| CPU | 4 vCPU | 8 vCPU |
+| RAM | 8 GB | 16 GB |
+| דיסק | 60 GB SSD | 200 GB NVMe |
+| מערכת הפעלה | Ubuntu 22.04 / 24.04 LTS או Debian 12 (64-bit) | אותו דבר |
+| תוכנה | Docker Engine + Docker Compose v2 | אותו דבר |
+
+- **ClamAV** צורך בעצמו כ־2–3 GB RAM (**דורש אימות** לפי גרסה). אפשר לכבות אותו אם העלאת קבצים כבויה.
+- **מודלים מקומיים (Ollama):** דורשים GPU או שרת נפרד. זו לא דרישה; המפעיל יכול להשתמש רק בספקי ענן.
+- **רשת:** דומיין עם רשומת A לשרת, פורטים 80 ו־443 פתוחים, יציאה ב־HTTPS לספקי ה־AI ולשרת הרישוי.
+- **מייל:** חשבון SMTP (לאימות מייל ולאיפוס סיסמה).
+- **הרשאות:** משתמש עם sudo להתקנה בלבד; הקונטיינרים רצים כ־non-root.
+- **גיבוי:** מקום אחסון חיצוני מומלץ (S3-compatible או דיסק נפרד).
+
+### רכיבים שרצים על השרת (Docker Compose)
+`caddy` (HTTPS) · `web` (Next.js) · `worker` (ריצות סוכנים, עיבוד ידע, סריקה, חיוב) · `postgres` + pgvector · `redis` · `minio` (קבצים) · `clamav` · `ollama` (אופציונלי)
+
+### זרימת התקנה
+```
+curl -fsSL https://<vendor>/install.sh -o install.sh   # מורידים, בודקים, ואז מריצים
+sudo bash install.sh
+  → בדיקת OS, RAM, דיסק, Docker ופורטים
+  → יצירת /opt/rentagent, .env עם סודות אקראיים (Master key, DB, Redis)
+  → docker compose pull && up -d → migrations
+  → "פתח https://your-domain/setup" → אשף הגדרה ראשונית (טוקן חד־פעמי שמודפס בטרמינל)
+```
+עדכון: `rentagent update` (גיבוי ← pull ← migrate ← בדיקת תקינות ← החזרה לגרסה הקודמת בכישלון).
+
+---
+
+## 5. User Stories (MVP)
 
 | # | כ... | אני רוצה... | כדי ש... |
 |---|------|-------------|----------|
-| 1 | שוכר | לחפש סוכן לפי קטגוריה ודירוג | אמצא סוכן מתאים מהר |
-| 2 | שוכר | לראות אומדן מחיר ותקרת הוצאה לפני הרצה | לא אופתע בחשבון |
-| 3 | שוכר | למלא טופס משימה ולהפעיל סוכן | הסוכן יבצע עבורי עבודה |
-| 4 | שוכר | לראות בזמן אמת מה הסוכן עושה ולאשר פעולות רגישות | אשמור שליטה |
-| 5 | שוכר | לקבל תוצר (טקסט/קובץ) ולדרג | אקבל ערך ואעזור לאחרים |
-| 6 | שוכר | לרכוש Credits ולראות היסטוריית חיובים | אנהל תקציב |
-| 7 | יוצר | לבנות סוכן ב־Builder ולבחור מודל וכלים | אפרסם בלי לכתוב קוד |
-| 8 | יוצר | לבדוק את הסוכן ב־Preview ולפרסם גרסה | אשחרר בביטחון |
-| 9 | אדמין | לאשר/לחסום סוכנים ולראות עלויות לפי ספק | אשמור על איכות ורווחיות |
-| 10 | אדמין | להשבית ספק או מודל בלחיצה | אגיב לתקלה/דליפה |
-| 11 | משתמש | להתחבר עם מייל+סיסמה/Google ולהפעיל 2FA | החשבון יהיה מאובטח |
-| 12 | משתמש | לייצא/למחוק את המידע שלי | אממש זכויות פרטיות |
+| 1 | מפעיל | להתקין בפקודה אחת ולסיים הגדרה באשף | אעלה לאוויר תוך פחות משעה |
+| 2 | מפעיל | להכניס מפתחות של כמה ספקים ולבדוק חיבור | המשתמשים שלי יקבלו את המודלים שבחרתי |
+| 3 | מפעיל | לקבוע לכל מודל מי רואה אותו ובאיזה מחיר | ארוויח ואשלוט בעלויות |
+| 4 | מפעיל | לבנות סוכן מתבנית ולהתאים אותו | אציע שירות בלי לפתח |
+| 5 | מפעיל | לחבר את ה־CRM שלי ככלי (OpenAPI/MCP) | הסוכנים יעבדו עם המערכות שלי |
+| 6 | מפעיל | לראות עלויות, כשלים ושימוש לפי סוכן וספק | אנהל את העסק |
+| 7 | מפעיל | למתג את המערכת בשם, לוגו, צבעים ודומיין שלי | זה ייראה כמוצר שלי |
+| 8 | מפעיל | לכבות ספק או סוכן מיד | אגיב לתקלה או לחריגה |
+| 9 | משתמש קצה | למצוא סוכן, לראות מחיר משוער ולהפעיל משימה | אקבל עבודה מוכנה |
+| 10 | משתמש קצה | לראות מה הסוכן עושה ולאשר פעולות רגישות | אשמור על שליטה |
+| 11 | משתמש קצה | לקנות Credits ולהגדיר תקרת הוצאה | לא אופתע בחשבון |
+| 12 | משתמש קצה | לייצא או למחוק את המידע שלי | אממש זכויות פרטיות |
 
 ---
 
-## 5. מסכים וזרימות
-
-**ציבורי:** דף בית · קטלוג · עמוד סוכן · תמחור · התחברות/הרשמה/איפוס · מדיניות פרטיות · תנאי שימוש · מדיניות עוגיות · הצהרת נגישות · 404/500
-
-**שוכר:** Dashboard · "ההשכרות שלי" · מסך ריצה (צ'אט + Timeline צעדים + אישורים) · תוצרים/קבצים · ארנק Credits וחשבוניות · הגדרות (פרופיל, 2FA, Sessions, API keys, BYOK, פרטיות/ייצוא/מחיקה) · ארגון וחברים
-
-**יוצר:** הסוכנים שלי · Agent Builder (Prompt · מודל · כלים · ידע · טופס קלט · תמחור) · Preview · גרסאות · אנליטיקס/הכנסות
-
-**אדמין:** Moderation queue · משתמשים · ספקים ומודלים (Registry + kill-switch) · עלויות · Audit log · אירועי אבטחה
-
-**זרימה מרכזית — השכרה:**
-```
-קטלוג → עמוד סוכן → "השכר" → טופס משימה + תקרת הוצאה
-  → בדיקת יתרה/הקפאת סכום (hold) → Job בתור → Worker מריץ לולאת סוכן
-  → Streaming לצד לקוח (SSE) → [אישור אנושי לפעולה רגישה]
-  → תוצר → חיוב סופי לפי שימוש בפועל (≤ תקרה) → דירוג
-```
-
----
-
-## 6. ארכיטקטורה
+## 6. ארכיטקטורה והחלטות טכנולוגיות
 
 ```
-                ┌──────────────── Browser (Next.js, RTL/LTR, PWA) ───────────────┐
-                └───────────────┬────────────────────────────────────────────────┘
-                                │ HTTPS (SSE לסטרימינג)
-┌───────────────────────────────▼───────────────────────────────┐
-│ apps/web — Next.js App Router (UI + Route Handlers / API)     │
-│  Auth · RBAC · Zod validation · Rate limit · CSRF · CSP        │
-└───────┬──────────────────────┬───────────────────────┬────────┘
-        │                      │                       │
-   PostgreSQL+pgvector      Redis (queues,          Object storage (S3)
-   (Prisma)                 rate-limit, pub/sub)     quarantine → ClamAV → clean
-        │                      │
-┌───────▼──────────────────────▼────────────────────────────────┐
-│ apps/worker — BullMQ workers                                   │
-│  Agent loop · Tool executor · RAG ingest · File scan · Billing  │
-│        │                                                       │
-│  packages/ai-gateway  ── Provider adapters + routing + fallback │
-│        │               ── Cost metering · Guardrails · Tracing  │
-│  Sandbox (E2B / Docker-gVisor) for code & browser  [V2]         │
-└────────┼───────────────────────────────────────────────────────┘
+               Browser (RTL/LTR, PWA, מיתוג של המפעיל)
+                              │ HTTPS
+                     ┌────────▼────────┐
+                     │  caddy (TLS)    │
+                     └────────┬────────┘
+     ┌────────────────────────▼─────────────────────────┐
+     │ web — Next.js: UI (משתמש + Admin) + API            │
+     │ Auth · RBAC · Zod · Rate limit · CSP · Settings    │
+     └───┬───────────────┬─────────────────┬─────────────┘
+         │               │                 │
+   postgres+pgvector   redis           minio (quarantine → clamav → clean)
+         │               │
+     ┌───▼───────────────▼──────────────────────────────┐
+     │ worker — BullMQ                                   │
+     │  agent-runtime: loop · tools · MCP · approvals    │
+     │  ai-gateway: providers · routing · fallback · cost│
+     │  ingest (RAG) · file scan · billing · webhooks    │
+     └───┬──────────────────────────────────────────────┘
          ▼
-  OpenAI · Anthropic · Google · xAI · Mistral · Cohere · DeepSeek ·
-  Groq · Together · Fireworks · Perplexity · AWS Bedrock · Azure OpenAI ·
-  OpenRouter · Ollama/vLLM (self-hosted, OpenAI-compatible)
+  ספקי AI שהמפעיל הגדיר (ענן) / Ollama / שרת OpenAI-compatible
+                              ⋮
+         (יציאה בלבד) license & update server של ה־Vendor
 ```
-
-### שכבת ספקי AI ("כל הספקים")
-- **בסיס:** Vercel AI SDK (`ai` + `@ai-sdk/*`) — ממשק אחיד ל־streaming, tool calling ו־structured output, עם providers רשמיים/קהילתיים לרוב הספקים ברשימה. ספק שאין לו adapter → דרך **OpenAI-compatible adapter** (רבים מהספקים חושפים API תואם). **דורש אימות** לכל ספק בנפרד.
-- **Model Registry בבסיס הנתונים** (לא בקוד): `provider, modelId, capabilities (tools/vision/json/reasoning), contextWindow, pricing per 1M tokens, enabled, region`. אדמין מעדכן בלי deploy.
-- **Routing:** לפי מדיניות הסוכן — `fixed` / `cheapest-capable` / `fastest` / `best-quality`, עם **fallback chain** בכשל/Rate-limit.
-- **BYOK:** מפתחות משתמש מוצפנים (AES-256-GCM, envelope encryption, מפתח-על ב־KMS/ENV), לעולם לא חוזרים לקליינט.
-
-### החלטות טכנולוגיות + חלופות
 
 | תחום | בחירה | למה | חלופות | מגבלות |
 |------|-------|-----|--------|--------|
-| שפה | TypeScript מקצה לקצה | טיפוסים משותפים, ולידציה משותפת | Python לחלק ה־AI | פחות ספריות ML מ־Python |
-| Monorepo | pnpm + Turborepo | שיתוף packages | Nx | עקומת למידה קטנה |
-| Web | Next.js (App Router) | SSR/SEO לקטלוג + API באותו מקום | Remix, SvelteKit | Vendor-ish, מורכבות caching |
-| UI | Tailwind + shadcn/ui (Radix) | רכיבים נגישים, RTL עם logical props | MUI, Chakra | צריך הקפדה על RTL |
-| i18n | next-intl | תמיכה טובה ב־App Router | i18next | — |
-| DB | PostgreSQL + Prisma + pgvector | רלציוני + וקטורי במקום אחד | Drizzle; Pinecone/Qdrant | pgvector פחות מהיר בסקייל ענק |
-| Queue | Redis + BullMQ | Jobs ארוכים, retries, cron | Temporal, Inngest | Temporal עדיף לזרימות ארוכות מאוד (שקול ב־V2) |
-| Auth | Better Auth | 2FA, Organizations, Passkeys, OAuth, self-hosted | Auth.js, Clerk (מנוהל) | ספרייה צעירה יחסית — **דורש אימות** פיצ'רים |
-| Payments | Stripe + Connect | Credits, מנויים, payouts ליוצרים | Paddle (MoR), סליקה ישראלית | עמלות; Connect דורש KYC |
-| Files | S3-compatible + ClamAV | הסגר וסריקה | שירות סריקה מנוהל | ClamAV צורך RAM |
-| Sandbox | E2B / Docker+gVisor | בידוד קוד ודפדפן | Firecracker, Modal | עלות/מורכבות — V2 |
-| Observability | OpenTelemetry + Langfuse (self-host) | Traces של LLM + עלויות | Helicone, LangSmith | עוד שירות להפעיל |
-| Errors | Sentry (עם scrubbing) | ניטור שגיאות | GlitchTip | שליחת מידע לצד ג' — לנקות PII |
+| שפה | TypeScript | טיפוסים וולידציה משותפים | Python | — |
+| אריזה | Docker Compose + Caddy | התקנה אחידה בכל שרת, HTTPS אוטומטי | Kubernetes/Helm (ל־V3 Enterprise) | דורש VPS, לא Shared hosting |
+| Web | Next.js (App Router), build מסוג standalone | UI ו־API יחד, SSR לקטלוג | Remix; Laravel (אם חייבים PHP) | — |
+| UI | Tailwind + shadcn/ui (Radix) | נגיש, RTL עם logical properties, מיתוג עם CSS variables | MUI | — |
+| i18n | next-intl + overrides מה־DB | המפעיל עורך מחרוזות | i18next | — |
+| DB | PostgreSQL + Prisma + pgvector | רלציוני + וקטורי בקונטיינר אחד | Drizzle; Qdrant | — |
+| Queue | Redis + BullMQ | ריצות ארוכות, retries, cron | Temporal | Temporal כבד מדי להתקנה אצל לקוח |
+| AI | Vercel AI SDK + OpenAI-compatible adapter | ממשק אחיד, Streaming, Tools | LiteLLM (Python, שירות נוסף) | **דורש אימות** תמיכה לכל ספק |
+| Auth | Better Auth | Self-hosted, 2FA, Passkeys, OAuth | Auth.js | **דורש אימות** פיצ'רים |
+| קבצים | MinIO + ClamAV | הכל על השרת של הלקוח | S3 חיצוני (אופציה) | — |
+| Observability | Traces ב־Postgres + דשבורד מובנה; OpenTelemetry export אופציונלי | בלי תלות בשירות חיצוני | Langfuse self-host | — |
+
+**לגבי שאלה 1:** אם חלק מהלקוחות ב־Shared hosting/cPanel, הסטאק הזה לא ירוץ אצלם (אין Docker, אין תהליכי רקע ארוכים, אין Redis). החלופה היא גרסת PHP/Laravel עם cron במקום worker — פחות יכולות (Streaming, ריצות ארוכות, Sandbox). **ההמלצה: VPS בלבד**, ולהגדיר את זה כדרישת מערכת.
 
 ---
 
 ## 7. סכמת בסיס נתונים (עיקרי)
 
 ```
-User(id, email, emailVerified, name, locale, createdAt, deletedAt)
-Account / Session / TwoFactor / Passkey      — מנוהל ע"י Better Auth
-Organization(id, name, slug, plan)
-Membership(userId, orgId, role: OWNER|ADMIN|MEMBER|VIEWER)
+— מערכת והגדרות
+Setting(key, value json, updatedBy, updatedAt)          — מיתוג, flags, מייל, מדיניות
+Translation(locale, key, value)                          — overrides למחרוזות
+License(key, tier, features json, validUntil, lastCheckAt)
 
-Agent(id, orgId(owner creator), slug, name, category, status: DRAFT|REVIEW|PUBLISHED|SUSPENDED,
-      visibility, ratingAvg, ratingCount)
-AgentVersion(id, agentId, version, systemPrompt, modelPolicy(json), tools(json),
-             inputSchema(json), pricing(json), requiredPermissions(json), publishedAt)
-KnowledgeSource(id, agentId|rentalId, fileId, status)
-Chunk(id, sourceId, content, embedding vector, metadata)
+— משתמשים
+User(id, email, emailVerified, name, locale, status, createdAt, deletedAt)
+Account / Session / TwoFactor / Passkey                  — Better Auth
+Role(id, name, permissions json, system bool)            — ברירות מחדל: OWNER, ADMIN, AGENT_MANAGER, SUPPORT, USER
+UserRole(userId, roleId)
+Plan(id, name, priceCents, interval, creditsIncluded, limits json, modelAccess json)
+Subscription(id, userId, planId, status, gateway, gatewayRef, periodEnd)
 
-Rental(id, orgId, userId, agentVersionId, pricingModel, budgetCapCents, status, startsAt, endsAt)
-Run(id, rentalId, status: QUEUED|RUNNING|WAITING_APPROVAL|SUCCEEDED|FAILED|CANCELED,
-    input(json), output(json), costCents, tokensIn, tokensOut, startedAt, finishedAt)
-RunStep(id, runId, idx, type: LLM|TOOL|APPROVAL|MESSAGE, provider, model, payload(json, redacted),
-        tokensIn, tokensOut, costMicros, latencyMs)
-Approval(id, runStepId, action, status: PENDING|APPROVED|REJECTED, decidedBy, decidedAt)
-Message(id, runId, role, content, createdAt)
+— ספקים ומודלים
+Provider(id, type: OPENAI|ANTHROPIC|...|OPENAI_COMPATIBLE, name, baseUrl, enabled, settings json)
+ProviderKey(id, providerId, encryptedKey, keyVersion, last4, spendLimitCents, enabled)
+Model(id, providerId, modelId, displayName, capabilities json, contextWindow,
+      costInPer1M, costOutPer1M, priceInPer1M, priceOutPer1M, visibility, planIds, enabled)
+RoutingPolicy(id, name, strategy, chain json)
 
-Provider(id, key, displayName, baseUrl, enabled)
-Model(id, providerId, modelId, capabilities(json), contextWindow, inputPricePer1M, outputPricePer1M, enabled)
-ProviderCredential(id, orgId|null(platform), providerId, encryptedKey, keyVersion, last4)
+— סוכנים
+Agent(id, slug, name, category, status: DRAFT|PUBLISHED|PAUSED|ARCHIVED, ownerId, ratingAvg)
+AgentVersion(id, agentId, version, instructions, routingPolicyId, tools json, inputSchema json,
+             outputFormat, pricing json, limits json, approvalRules json, publishedAt)
+Tool(id, type: BUILTIN|HTTP|OPENAPI|MCP, name, config json(encrypted secrets), enabled)
+McpServer(id, name, url, authEncrypted, enabled)
+KnowledgeSource(id, agentId, fileId, status) · Chunk(id, sourceId, content, embedding vector, meta)
 
-Wallet(orgId, balanceCents)
-LedgerEntry(id, orgId, type: TOPUP|HOLD|CAPTURE|RELEASE|REFUND|PAYOUT, amountCents, refType, refId)  — double-entry, immutable
-Payment(id, orgId, stripeId, amountCents, status)
-CreatorPayout(id, creatorOrgId, amountCents, status, stripeTransferId)
+— ריצות
+Rental(id, userId, agentVersionId, pricingModel, budgetCapCents, status, expiresAt)
+Run(id, rentalId, userId, status: QUEUED|RUNNING|WAITING_APPROVAL|SUCCEEDED|FAILED|CANCELED,
+    input json, output json, costCents, priceCents, tokensIn, tokensOut, startedAt, finishedAt)
+RunStep(id, runId, idx, type, providerId, modelId, payload json(redacted), tokens, costMicros, latencyMs)
+Approval(id, runStepId, action, status, decidedBy, decidedAt)
 
-Review(id, agentId, userId, rentalId, rating, text, status)
-File(id, orgId, key, mime, size, sha256, scanStatus: PENDING|CLEAN|INFECTED|ERROR)
-ApiKey(id, orgId, hashedKey, prefix, scopes, lastUsedAt, revokedAt)
-AuditLog(id, actorId, orgId, action, target, ip(hashed), createdAt)
-ConsentRecord(id, anonId, policyVersion, categories(json), createdAt)
+— כסף
+Wallet(userId, balanceCents)
+LedgerEntry(id, userId, type: TOPUP|HOLD|CAPTURE|RELEASE|REFUND|ADJUST, amountCents, refType, refId)  — immutable
+Payment(id, userId, gateway, gatewayRef, amountCents, currency, status)
+
+— שונות
+File(id, ownerId, key, mime, size, sha256, scanStatus)
+Webhook(id, url, events, secretEncrypted, enabled) · WebhookDelivery(id, webhookId, event, status, attempts)
+ApiKey(id, userId, hashedKey, prefix, scopes, lastUsedAt, revokedAt)
+AuditLog(id, actorId, action, target, ipHash, meta json, createdAt)
+ConsentRecord(id, anonId, policyVersion, categories json, createdAt)
 ```
-כל שאילתה על משאב מסוננת לפי `orgId` בשכבת ה־data access (מניעת IDOR/BOLA), ובנוסף בדיקת הרשאה לפי role.
+כל גישה למשאב עוברת דרך שכבת data access שבודקת בעלות והרשאה (מניעת IDOR/BOLA).
 
 ---
 
@@ -232,19 +270,21 @@ ConsentRecord(id, anonId, policyVersion, categories(json), createdAt)
 
 | Method | Path | גישה |
 |--------|------|------|
-| GET | `/api/agents` · `/api/agents/:slug` | ציבורי |
-| POST/PATCH | `/api/creator/agents` · `/:id/versions` · `/:id/publish` | יוצר (owner/admin של הארגון) |
-| POST | `/api/rentals` | מחובר; בודק יתרה ותקרה |
-| POST | `/api/rentals/:id/runs` | חבר בארגון השוכר |
-| GET | `/api/runs/:id/stream` (SSE) | חבר בארגון השוכר |
-| POST | `/api/runs/:id/cancel` · `/approvals/:id` | חבר (approve דורש MEMBER+) |
-| POST | `/api/files` (upload → quarantine) | מחובר, rate-limited |
-| GET/POST | `/api/wallet` · `/api/wallet/topup` | ADMIN/OWNER של הארגון |
-| POST | `/api/webhooks/stripe` | ציבורי + אימות חתימה |
-| CRUD | `/api/settings/api-keys` · `/byok` | OWNER/ADMIN |
-| POST | `/api/privacy/export` · `/api/privacy/delete` | המשתמש עצמו (re-auth) |
-| * | `/api/admin/*` | PLATFORM_ADMIN + MFA חובה |
-| * | `/api/v1/*` (Public API) [V2] | API key עם scopes |
+| GET/POST | `/setup/*` | רק לפני שההגדרה הושלמה + טוקן חד־פעמי |
+| GET | `/api/agents` · `/api/agents/:slug` | ציבורי (אם Marketplace פתוח) או מחובר |
+| POST | `/api/rentals` · `/api/rentals/:id/runs` | משתמש מחובר, בעלים של ההשכרה |
+| GET | `/api/runs/:id/stream` (SSE) | הבעלים של הריצה |
+| POST | `/api/runs/:id/cancel` · `/api/approvals/:id` | הבעלים / תפקיד מורשה |
+| POST | `/api/files` | מחובר, rate-limited, הסגר + סריקה |
+| GET/POST | `/api/wallet` · `/api/wallet/topup` | המשתמש עצמו |
+| POST | `/api/webhooks/payments/:gateway` | ציבורי + אימות חתימה |
+| POST | `/api/privacy/export` · `/api/privacy/delete` | המשתמש עצמו + אימות מחדש |
+| * | `/api/admin/providers` · `/models` · `/routing` | `providers.manage` + MFA |
+| * | `/api/admin/agents` · `/tools` · `/mcp` · `/templates` | `agents.manage` |
+| * | `/api/admin/settings` · `/branding` · `/translations` · `/flags` · `/plans` | `settings.manage` + MFA |
+| * | `/api/admin/users` · `/audit` · `/runs` · `/costs` | לפי הרשאה |
+| GET | `/api/health` | ציבורי (בלי פרטים פנימיים) |
+| * | `/api/v1/*` [V2] | API key עם scopes |
 
 ---
 
@@ -253,21 +293,24 @@ ConsentRecord(id, anonId, policyVersion, categories(json), createdAt)
 ```
 rentagent/
 ├─ apps/
-│  ├─ web/                 # Next.js: UI + API route handlers
-│  │  ├─ app/[locale]/(public|app|creator|admin)/...
-│  │  ├─ app/api/...
-│  │  ├─ components/  lib/  messages/he.json en.json
-│  └─ worker/              # BullMQ workers: runs, ingest, scan, billing
+│  ├─ web/                 # Next.js: (public) (app) (admin) (setup) + api
+│  └─ worker/              # BullMQ processors
 ├─ packages/
-│  ├─ db/                  # Prisma schema, migrations, data-access (tenant-scoped)
-│  ├─ ai-gateway/          # providers, registry, routing, fallback, metering
+│  ├─ db/                  # Prisma schema, migrations, data-access עם בדיקת הרשאות
+│  ├─ ai-gateway/          # provider adapters, registry, routing, fallback, metering
 │  ├─ agent-runtime/       # agent loop, tools, MCP client, approvals, guardrails
-│  ├─ billing/             # ledger, Stripe, pricing estimates
-│  ├─ shared/              # zod schemas, types, constants
-│  └─ ui/                  # shared accessible components
-├─ infra/                  # docker-compose (postgres, redis, clamav, minio), Dockerfiles
-├─ docs/                   # threat-model, data-map, legal drafts, a11y statement
-├─ .env.example  README.md  PLAN.md
+│  ├─ billing/             # ledger, payment gateway adapters
+│  ├─ settings/            # branding, flags, translations, plans
+│  ├─ templates/           # תבניות סוכנים (JSON)
+│  ├─ shared/              # zod schemas, types
+│  └─ ui/                  # רכיבים נגישים עם תמיכה במיתוג
+├─ deploy/
+│  ├─ docker-compose.yml  Caddyfile  .env.example
+│  ├─ install.sh  rentagent (CLI: update/backup/restore/status)
+│  └─ REQUIREMENTS.md      # מסמך דרישות ללקוח
+├─ license-server/         # שירות רישוי ועדכונים (אצל ה־Vendor)
+├─ docs/                   # מדריך מפעיל, threat model, data map, טיוטות משפטיות
+└─ README.md  PLAN.md
 ```
 
 ---
@@ -278,49 +321,47 @@ rentagent/
 
 | נכס | איום | סיכון | בקרה |
 |-----|------|-------|------|
-| מפתחות API (פלטפורמה + BYOK) | דליפה, שימוש לרעה | **קריטי** | Envelope encryption, אף פעם לא לקליינט/לוגים, rotation, מגבלת הוצאה לכל מפתח |
-| ארנק/Credits | מניפולציית מחיר, race conditions | **גבוה** | Ledger אטומי (transactions + row lock), מחיר מחושב רק בשרת, idempotency keys, אימות חתימת webhook |
-| מידע של שוכרים (קבצים, שיחות) | IDOR, דליפה בין ארגונים | **גבוה** | Tenant scoping בכל query, בדיקות אוטומטיות ל־BOLA, הצפנה במנוחה |
-| סוכן זדוני של יוצר | Prompt שגונב מידע, exfiltration דרך כלים | **גבוה** | Moderation, הרשאות כלים מוצהרות ומאושרות ע"י השוכר, allowlist דומיינים, HITL לפעולות יוצאות |
-| Prompt injection מתוכן חיצוני (דף/מסמך) | הסוכן מבצע פעולה לא רצויה | **גבוה** | הפרדת תוכן לא אמין, אישור אנושי לפעולות רגישות, כלים עם least privilege |
-| כלי Fetch/Browser | SSRF לרשת פנימית | **גבוה** | חסימת IP פרטיים/metadata, egress proxy, sandbox |
-| העלאת קבצים | נוזקות | בינוני | allowlist MIME (magic bytes), גודל, quarantine, ClamAV, שם קובץ אקראי, לא ב־public |
-| חשבונות | Brute force, ATO | בינוני | Rate limit, 2FA, הודעות שגיאה כלליות, session revocation |
-| עלויות LLM | Denial-of-wallet | גבוה | Budget cap לכל ריצה/ארגון, max steps, max tokens, kill-switch |
+| מפתחות API של המפעיל | דליפה, שימוש לרעה | **קריטי** | AES-256-GCM עם Master key שנוצר בהתקנה (`.env` עם `chmod 600`), אף פעם לא לקליינט או ללוגים, מוצגים רק 4 תווים אחרונים, מגבלת הוצאה לכל מפתח |
+| חשבון Admin | השתלטות | **קריטי** | MFA חובה, Rate limit, אימות מחדש לפעולות רגישות, Audit log, אופציה להגבלת IP |
+| אשף ההגדרה | השתלטות על התקנה טרייה | **גבוה** | טוקן חד־פעמי מהטרמינל, ננעל אחרי שההגדרה הושלמה |
+| ארנק ו־Credits | Race conditions, מניפולציית מחיר | **גבוה** | Ledger אטומי, מחיר מחושב רק בשרת, idempotency, אימות חתימות webhook |
+| מידע משתמשים | IDOR, דליפה בין משתמשים | **גבוה** | בדיקת בעלות בכל query, בדיקות BOLA אוטומטיות |
+| כלים (HTTP/OpenAPI/MCP/Fetch) | SSRF לרשת הפנימית של השרת (DB, Redis, metadata) | **גבוה** | חסימת כתובות פרטיות ו־metadata, רשת Docker נפרדת ל־worker, allowlist דומיינים לכל סוכן |
+| Prompt injection | הסוכן מבצע פעולה לא רצויה | **גבוה** | אישור אנושי לפעולות יוצאות, least privilege לכלים, סימון תוכן לא אמין |
+| עלויות LLM | Denial-of-wallet | **גבוה** | תקרות לריצה, למשתמש ולמפתח; מקסימום צעדים; kill-switch |
+| קבצים | נוזקות | בינוני | Allowlist MIME (magic bytes), גודל, הסגר, ClamAV, שם קובץ אקראי, לא בתיקייה ציבורית |
+| שרשרת אספקה | Image או עדכון זדוני | **גבוה** | חתימת images (cosign), checksums לסקריפט, SBOM, סריקת תלויות ב־CI |
+| המוצר שאתה מוכר | עקיפת רישיון | בינוני | בדיקה חתומה (Ed25519) בצד שרת; לקבל שזו הגנה חלקית בלבד |
 
-כותרות: CSP עם nonce, HSTS, `X-Frame-Options: DENY`/`frame-ancestors`, `Referrer-Policy`, Cookies `Secure; HttpOnly; SameSite=Lax`.
+כותרות: CSP עם nonce, HSTS, `frame-ancestors 'none'` (חוץ מה־Widget), `Referrer-Policy`, Cookies `Secure; HttpOnly; SameSite=Lax`.
 
-### Data Map (תמצית)
-
-| מידע | מטרה | בסיס עיבוד (GDPR) | אחסון | שמירה | צד שלישי |
-|------|------|-------------------|-------|-------|----------|
-| מייל, שם | חשבון | חוזה | Postgres | חיי החשבון + 30 יום | ספק מייל (Resend/SES) |
-| קלט משימה, שיחות, קבצים | ביצוע השירות | חוזה | Postgres/S3 מוצפן | ברירת מחדל 90 יום, ניתן לשינוי | **ספק ה־AI שנבחר** |
-| נתוני תשלום | חיוב | חוזה + חובה חוקית | Stripe (לא אצלנו) | לפי דין (חשבונאות) | Stripe |
-| לוגים/IP | אבטחה | אינטרס לגיטימי | לוגים (IP מגובב) | 90 יום | Sentry (מנוקה) |
-| אנליטיקה | שיפור מוצר | הסכמה | — | 13 חודשים מקס' | רק אחרי הסכמה |
-
-**קריטי:** תוכן משימות נשלח לספקי AI צד ג'. יש להציג למשתמש איזה ספק מעבד, לבדוק DPA ותנאי שימוש בנתונים (no-training) מול כל ספק, ולשקול העברת מידע מחוץ ל־EU/ישראל. — **דורש בדיקה משפטית**.
+### פרטיות
+- **המפעיל הוא בעל השליטה במידע (Controller)** של המשתמשים שלו. אתה (Vendor) לא מקבל מידע אישי — ולכן כנראה לא Processor. **דורש בדיקה משפטית.**
+- המערכת מספקת למפעיל כלים: Data map מוכן, ייצוא ומחיקה למשתמש, מדיניות שמירה שניתנת להגדרה (ברירת מחדל: ריצות ושיחות 90 יום), אנונימיזציה, ConsentRecord.
+- **תוכן משימות נשלח לספקי ה־AI שהמפעיל בחר.** המערכת תציג למשתמש איזה ספק מעבד את הבקשה, וטיוטת מדיניות הפרטיות תכלול את זה. המפעיל אחראי לבדוק DPA ומדיניות שימוש בנתונים מול כל ספק.
+- טיוטות (מסומנות "לבדיקה משפטית"): מדיניות פרטיות, תנאי שימוש, מדיניות עוגיות, הצהרת נגישות — המפעיל עורך ומפרסם.
 
 ### עוגיות
-- חיוניות: session, CSRF, locale, consent — ללא הסכמה.
-- אנליטיקה/שיווק: נטענים **רק** אחרי הסכמה; באנר עם "אישור הכל" / "דחיית הכל" / "ניהול העדפות" בשווי משקל; קישור קבוע "הגדרות פרטיות ועוגיות" ב־Footer; ConsentRecord עם גרסת מדיניות.
+- חיוניות בלבד כברירת מחדל: session, CSRF, locale, consent.
+- המפעיל יכול להוסיף Analytics או Pixel דרך מנהל הסקריפטים, שטוען אותם **רק אחרי הסכמה** לפי קטגוריה.
+- באנר: "אישור הכל" / "דחיית הכל" / "ניהול העדפות" בשווי משקל; קישור קבוע "הגדרות פרטיות ועוגיות" ב־Footer.
 
 ### נגישות
-- יעד WCAG 2.1 AA + ת"י 5568; Radix primitives, ניווט מקלדת מלא, focus גלוי, `aria-live` להודעות סטרימינג של הסוכן (polite, מצטבר — לא כל טוקן), RTL עם CSS logical properties, זום 200%, `prefers-reduced-motion`.
-- רכיב התאמות נגישות קל משקל (לא תחליף), עמוד הצהרת נגישות (טיוטה).
-- בדיקות: axe-core ב־Playwright + בדיקה ידנית עם NVDA/VoiceOver.
+- יעד WCAG 2.1 AA ות"י 5568, ב־UI של המשתמש וגם ב־Admin.
+- בוחר הצבעים במיתוג **בודק ניגודיות** ומתריע (או חוסם) כשהצבעים לא עומדים ב־AA — כדי שהתאמות של המפעיל לא ישברו נגישות.
+- Radix primitives, ניווט מקלדת, focus גלוי, `aria-live` מצטבר לסטרימינג, RTL עם logical properties, זום 200%, `prefers-reduced-motion`.
+- תבנית הצהרת נגישות שהמפעיל ממלא (רכז נגישות, פרטי קשר).
 
 ---
 
 ## 11. סיכונים ונושאים לבדיקה מקצועית
 
-1. **משפטי:** אחריות על פעולות סוכן (מי אחראי כשסוכן שלח מייל שגוי?), תנאי שימוש של ספקי AI לגבי resale/markup — **דורש בדיקה משפטית** לכל ספק.
-2. **EU AI Act** — חובות שקיפות (הודעה שהמשתמש מתקשר עם AI) ותלוי שימוש — **דורש בדיקה משפטית**.
-3. **מרקטפלייס ותשלומים ליוצרים:** KYC, מע"מ/חשבוניות בישראל ובחו"ל, ייתכן שעדיף Merchant of Record — **דורש בדיקה חשבונאית/משפטית**.
-4. **פרטיות:** מאגר מידע לפי החוק הישראלי, ממונה פרטיות, DPIA — **דורש בדיקה משפטית**.
-5. **טכני:** עלויות LLM בלתי צפויות; שינויים תכופים ב־API של ספקים; Prompt injection הוא בעיה לא פתורה — מקטינים סיכון, לא מבטלים.
-6. **אבטחה:** לפני השקה — בדיקת חדירות חיצונית, במיוחד ל־BOLA, ארנק, sandbox.
+1. **Self-hosted = אינספור סביבות.** לכן תומכים רשמית רק ב־Docker על Linux לפי מסמך הדרישות. כל דבר אחר — "לא נתמך".
+2. **עדכונים** — migrations שנכשלים אצל לקוח הם הסיכון התפעולי הגדול ביותר → גיבוי אוטומטי לפני כל עדכון, rollback, ובדיקת migrations ב־CI על עותק נתונים.
+3. **ספקי AI משנים API ותמחור תדיר** → Registry ניתן לעריכה + adapter תואם־OpenAI כגיבוי.
+4. **משפטי:** תנאי השימוש של ספקים לגבי מכירה חוזרת עם Markup (אחריות המפעיל, אבל כדאי להתריע); אחריות על פעולות סוכן; EU AI Act (שקיפות מול המשתמש); הסכם רישיון (EULA) ותנאי תמיכה שלך מול המפעיל — **דורש בדיקה משפטית**.
+5. **מס וחשבוניות** במכירת רישיונות לחו"ל — **דורש בדיקה חשבונאית**.
+6. **אבטחה:** בדיקת חדירות להתקנה סטנדרטית לפני מכירה ראשונה.
 
 ---
 
@@ -328,19 +369,18 @@ rentagent/
 
 | שלב | תוצר | בדיקות |
 |-----|------|--------|
-| **1. תשתית** | Monorepo, docker-compose (Postgres+pgvector, Redis, MinIO, ClamAV), Prisma schema, Next.js עם he/en + RTL, layout נגיש, דפי 404/500, כותרות אבטחה, `.env.example`, README, CI (lint/typecheck/test) | build + unit |
-| **2. Auth + Orgs** | הרשמה/התחברות, אימות מייל, איפוס, 2FA, Google OAuth, ארגונים ותפקידים, rate limit, audit log | בדיקות הרשאות + BOLA |
-| **3. AI Gateway** | Registry ספקים/מודלים, adapters לכל הספקים, routing+fallback, metering, BYOK מוצפן, מסך אדמין לספקים + kill-switch | unit עם mock providers |
-| **4. Agent Runtime** | Worker + agent loop, tools (web search, fetch עם הגנת SSRF, HTTP, MCP client), HITL approvals, SSE streaming, traces, RAG + העלאת קבצים עם סריקה | integration |
-| **5. Marketplace + Builder** | קטלוג, עמוד סוכן, Agent Builder, גרסאות, Preview, moderation queue, ביקורות | e2e Playwright + axe |
-| **6. Billing** | Wallet + ledger, Stripe top-up + webhooks, hold/capture/refund, תקרות הוצאה, חשבוניות, דשבורד עלויות | בדיקות race/idempotency |
-| **7. Compliance & Launch** | באנר עוגיות, טיוטות מדיניות/תנאים/הצהרת נגישות, ייצוא/מחיקת מידע, Checklist לפרודקשן | a11y, security scan, SBOM |
-| V2+ | Sandbox קוד/דפדפן, multi-agent, cron/triggers, ערוצים (WhatsApp/Telegram/Slack/Widget), Stripe Connect payouts, Public API, evals, זיכרון | — |
+| **1. תשתית והתקנה** | Monorepo, Docker Compose מלא, Caddy, Prisma schema, Next.js עם he/en ו־RTL, `install.sh`, CLI (status/backup/update), `REQUIREMENTS.md`, אשף הגדרה, כותרות אבטחה, דפי 404/500, CI | התקנה נקייה על Ubuntu ב־CI |
+| **2. משתמשים והרשאות** | הרשמה, אימות מייל, איפוס, 2FA, OAuth, תפקידים והרשאות, Audit log, Rate limit | בדיקות הרשאות + BOLA |
+| **3. ספקי AI** | Admin ספקים ומפתחות (מוצפנים), בדיקת חיבור, Registry מודלים, נראות ומחירים, Routing ו־Fallback, Metering, Kill-switch | Mock providers + בדיקות חוזה |
+| **4. Agent Control Center** | Builder, תבניות, גרסאות, מדיניות, Runtime ב־worker, כלים (Fetch, HTTP/OpenAPI, MCP, מייל), אישור אנושי, SSE, Traces, RAG + קבצים עם סריקה, ניטור ובקרה | Integration |
+| **5. חוויית משתמש קצה** | קטלוג, עמוד סוכן, הפעלה, צ'אט, תוצרים, היסטוריה, הגדרות פרטיות | E2E Playwright + axe |
+| **6. התאמות ותשלומים** | מיתוג עם בדיקת ניגודיות, עריכת מחרוזות, Feature flags, תוכניות, Credits, Ledger, Stripe, Webhooks יוצאים | Race/idempotency |
+| **7. רישוי, Compliance והשקה** | License server + בדיקה במוצר, באנר עוגיות, טיוטות משפטיות, מדריך מפעיל, בדיקות עומס לאימות הדרישות, Checklist לפרודקשן | Security scan, SBOM, a11y |
+| V2+ | Sandbox לקוד ולדפדפן, Router ו־Supervisor, Cron ו־Triggers, ערוצים, BYOK למשתמשים, API ציבורי, Evals, תפקידים מותאמים, Plugins, Helm | — |
 
 ---
 
 ## 13. הצעד הבא
-
-1. ענה על 5 השאלות בסעיף 2 (או "המשך עם ההנחות").
-2. אשר/תקן את הסטאק ואת חלוקת ה־MVP.
-3. לאחר אישור — מתחילים **שלב 1** וכל שלב יקבל קובץ `docs/phase-N.md` קצר + קוד מלא.
+1. לענות על 5 השאלות בסעיף 2 — במיוחד **שאלה 1 (סוג השרת)**, כי היא קובעת את הסטאק.
+2. לאשר או לתקן את רשימת ה־MVP.
+3. אחרי האישור — שלב 1.
