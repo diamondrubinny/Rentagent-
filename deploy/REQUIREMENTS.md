@@ -5,7 +5,7 @@ stays on that server. Licenses are verified offline. Only if you set `LICENSE_SE
 license id, your domain and the installed version are sent once a day to the vendor's license
 server — never data about users.
 
-> Figures below are initial estimates and will be validated by load tests before general availability.
+> Figures below are validated by the load test in section 9 for page traffic; AI answer time depends on your AI provider.
 
 ## 1. Hardware
 
@@ -95,3 +95,32 @@ sudo rentagent backup          # backup database, files, configuration
 sudo rentagent update [ver]    # backup → update → automatic rollback on failure
 sudo rentagent restore <dir>   # restore a backup
 ```
+
+## 9. Load test
+
+Measured on one 4 vCPU / 15 GB machine running the whole stack (web, worker, PostgreSQL, Redis)
+**and** the load generator ([autocannon](https://github.com/mcollina/autocannon), 15 s per scenario,
+production build, no Caddy/TLS). Requests per second at 50 concurrent connections:
+
+| Scenario | 1 web instance | p50 latency |
+|---|---|---|
+| Health check | 727 | 65 ms |
+| Home page (anonymous) | 85 | 566 ms |
+| Agent catalog | 77 | 623 ms |
+| Agent page | 64 | 752 ms |
+| Legal page | 49 | 965 ms |
+| Chat list (signed in) | 66 | 709 ms |
+| Conversation (signed in) | 47 | 1022 ms |
+
+- Two web instances on the same machine served **156 req/s** (home) and **152 req/s** (catalog)
+  at the same latency — each instance renders on one CPU core. `install.sh` therefore sets
+  `WEB_REPLICAS` to half the vCPUs (change it in `.env`, then `rentagent restart`).
+- At 200 connections nothing failed (0 errors) but latency grew to several seconds: size by
+  pages per second, not by sockets.
+- A signed-in user who reads and chats creates roughly one page or API request every 10–20 s
+  (answers stream over one long-lived connection). At ~150 req/s the web tier of a 4 vCPU server
+  therefore has headroom far beyond the 50 active users in section 1; that limit is set by agent
+  runs and the database, not by page rendering. Larger servers were not measured.
+- Agent answers are bounded by the AI provider and by `RUN_CONCURRENCY` (default 4 parallel runs
+  per worker), not by the web tier.
+
