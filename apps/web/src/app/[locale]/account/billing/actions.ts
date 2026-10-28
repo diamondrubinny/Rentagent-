@@ -3,7 +3,9 @@
 import { randomUUID } from 'node:crypto';
 import {
   createPayPalOrder,
+  createPortalSession,
   createStripeCheckout,
+  createSubscriptionCheckout,
   decimalToMinor,
   PayPalError,
 } from '@rentagent/billing';
@@ -118,6 +120,78 @@ export async function startTopUp(
       },
       'top-up could not be started',
     );
+    return { ok: false, error: 'gatewayError' };
+  }
+}
+
+/** Starts a Stripe subscription checkout for an active plan (one active subscription per user). */
+export async function subscribe(planId: string, locale: string): Promise<TopUpResult> {
+  const user = await getCurrentUser();
+  if (!user || user.status !== 'ACTIVE') return { ok: false, error: 'signedOut' };
+  const billing = await getBillingConfig();
+  if (!billing.settings.enabled || !billing.stripe)
+    return { ok: false, error: 'gatewayUnavailable' };
+  const limit = await rateLimit(redis(), `subscribe:${user.id}`, 10, 60 * 60);
+  if (!limit.allowed) return { ok: false, error: 'rateLimited' };
+  if (typeof planId !== 'string' || !/^[0-9a-f-]{36}$/.test(planId))
+    return { ok: false, error: 'invalidPlan' };
+  const plan = await db().plan.findFirst({
+    where: { id: planId, active: true, stripePriceId: { not: null } },
+  });
+  if (!plan?.stripePriceId) return { ok: false, error: 'invalidPlan' };
+  const existing = await db().subscription.findFirst({
+    where: { userId: user.id, status: { in: ['ACTIVE', 'PAST_DUE'] } },
+  });
+  if (existing) return { ok: false, error: 'alreadySubscribed' };
+  const customer = await db().subscription.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+    select: { customerRef: true },
+  });
+  const lang = isSupportedLocale(locale) ? locale : 'en';
+  const appUrl = getServerEnv().APP_URL.replace(/\/$/, '');
+  try {
+    const session = await createSubscriptionCheckout(billing.stripe, {
+      userId: user.id,
+      email: user.email,
+      planId: plan.id,
+      priceId: plan.stripePriceId,
+      customerRef: customer?.customerRef ?? null,
+      successUrl: `${appUrl}/${lang}/account/billing?subscribed=1`,
+      cancelUrl: `${appUrl}/${lang}/account/billing?canceled=1`,
+      automaticTax: billing.stripe.automaticTax,
+    });
+    await audit('billing.subscription_started', { actorId: user.id, meta: { plan: plan.id } });
+    return { ok: true, url: session.url };
+  } catch (error) {
+    logger().error(
+      { err: error instanceof Error ? error.message : 'unknown' },
+      'subscription checkout failed',
+    );
+    return { ok: false, error: 'gatewayError' };
+  }
+}
+
+/** Opens Stripe's customer portal (change plan, payment method, invoices, cancel). */
+export async function manageSubscription(locale: string): Promise<TopUpResult> {
+  const user = await getCurrentUser();
+  if (!user || user.status !== 'ACTIVE') return { ok: false, error: 'signedOut' };
+  const billing = await getBillingConfig();
+  if (!billing.stripe) return { ok: false, error: 'gatewayUnavailable' };
+  const subscription = await db().subscription.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!subscription) return { ok: false, error: 'noSubscription' };
+  const lang = isSupportedLocale(locale) ? locale : 'en';
+  try {
+    const url = await createPortalSession(
+      billing.stripe,
+      subscription.customerRef,
+      `${getServerEnv().APP_URL.replace(/\/$/, '')}/${lang}/account/billing`,
+    );
+    return { ok: true, url };
+  } catch {
     return { ok: false, error: 'gatewayError' };
   }
 }

@@ -6,11 +6,18 @@ import { notFound } from 'next/navigation';
 import { getBillingConfig } from '@/lib/server/billing';
 import { db } from '@/lib/server/runtime';
 import { requireUser } from '@/lib/server/session';
+import { ManageSubscriptionButton, PlanButton } from './plan-actions';
 import { TopUpForm } from './top-up-form';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ paid?: string; canceled?: string; failed?: string; pending?: string }>;
+  searchParams: Promise<{
+    paid?: string;
+    canceled?: string;
+    failed?: string;
+    pending?: string;
+    subscribed?: string;
+  }>;
 }
 
 const HISTORY = 100;
@@ -33,6 +40,17 @@ export default async function BillingPage({ params, searchParams }: PageProps) {
   const { currency } = billing;
   const money = (minor: bigint) => formatMoney(minor, currency, locale);
 
+  const [plans, subscription] = await Promise.all([
+    db().plan.findMany({
+      where: { active: true, stripePriceId: { not: null } },
+      orderBy: [{ sortOrder: 'asc' }, { priceMinor: 'asc' }],
+    }),
+    db().subscription.findFirst({
+      where: { userId: user.id, status: { not: 'CANCELED' } },
+      orderBy: { createdAt: 'desc' },
+      include: { plan: true },
+    }),
+  ]);
   const [wallet, entries, payments] = await Promise.all([
     db().wallet.findUnique({ where: { userId: user.id } }),
     db().ledgerEntry.findMany({
@@ -55,15 +73,17 @@ export default async function BillingPage({ params, searchParams }: PageProps) {
   const agentOf = new Map(runs.map((run) => [run.id, run.agent.name]));
   const signupCredit = decimalToMinor(billing.settings.signupCredit || '0', currency);
 
-  const notice = query.paid
-    ? { tone: 'success', text: t('paid') }
-    : query.pending
-      ? { tone: 'success', text: t('pending') }
-      : query.failed
-        ? { tone: 'error', text: t('failed') }
-        : query.canceled
-          ? { tone: 'error', text: t('canceled') }
-          : null;
+  const notice = query.subscribed
+    ? { tone: 'success', text: t('subscribedNotice') }
+    : query.paid
+      ? { tone: 'success', text: t('paid') }
+      : query.pending
+        ? { tone: 'success', text: t('pending') }
+        : query.failed
+          ? { tone: 'error', text: t('failed') }
+          : query.canceled
+            ? { tone: 'error', text: t('canceled') }
+            : null;
 
   return (
     <div className="max-w-3xl space-y-10">
@@ -99,6 +119,51 @@ export default async function BillingPage({ params, searchParams }: PageProps) {
         )}
         <p className="mt-3 text-sm text-muted">{t('howCharged')}</p>
       </section>
+
+      {billing.stripe && (plans.length > 0 || subscription) && (
+        <section aria-labelledby="plans-title" className="space-y-4">
+          <h2 id="plans-title" className="text-xl font-bold">
+            {t('plans')}
+          </h2>
+          {subscription ? (
+            <div className="space-y-3 rounded-lg border border-border p-4">
+              <p>
+                {t('currentPlan', { plan: subscription.plan?.name ?? '—' })}{' '}
+                <strong>{t(`subscription_${subscription.status}`)}</strong>
+              </p>
+              {subscription.currentPeriodEnd && (
+                <p className="text-sm text-muted">
+                  {t(subscription.cancelAtPeriodEnd ? 'endsOn' : 'renewsOn', {
+                    date: format.dateTime(subscription.currentPeriodEnd, { dateStyle: 'long' }),
+                  })}
+                </p>
+              )}
+              <ManageSubscriptionButton locale={locale} />
+            </div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {plans.map((plan) => (
+                <li key={plan.id} className="space-y-2 rounded-lg border border-border p-4">
+                  <h3 className="text-lg font-bold" dir="auto">
+                    {plan.name}
+                  </h3>
+                  {plan.description && <p dir="auto">{plan.description}</p>}
+                  <p className="text-2xl font-bold" dir="ltr">
+                    {formatMoney(plan.priceMinor, plan.currency, locale)}
+                    <span className="text-base font-normal"> / {t(`per_${plan.interval}`)}</span>
+                  </p>
+                  <p className="text-sm text-muted">
+                    {t('planCredits', {
+                      amount: formatMoney(plan.creditsMinor, plan.currency, locale),
+                    })}
+                  </p>
+                  <PlanButton planId={plan.id} planName={plan.name} locale={locale} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="topup-title" className="space-y-4">
         <h2 id="topup-title" className="text-xl font-bold">

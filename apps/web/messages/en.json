@@ -28,7 +28,8 @@
     "privacySettings": "Privacy and cookie settings",
     "languages": "Languages",
     "rights": "© {year} {siteName}",
-    "poweredBy": "Powered by RentAgent"
+    "poweredBy": "Powered by RentAgent",
+    "pricing": "Pricing"
   },
   "Home": {
     "title": "AI agents that work for you",
@@ -1190,7 +1191,8 @@
       "wrongPassword": "The password is not correct.",
       "staffAccount": "Staff accounts cannot be deleted here.",
       "rateLimited": "Too many attempts. Try again later.",
-      "signedOut": "Your session has ended. Sign in again."
+      "signedOut": "Your session has ended. Sign in again.",
+      "subscriptionActive": "Your subscription could not be canceled automatically. Cancel it under Billing, then try again."
     }
   },
   "AdminLanguages": {
@@ -1300,8 +1302,25 @@
       "gatewayUnavailable": "This payment method is not available.",
       "rateLimited": "Too many attempts. Try again later.",
       "invalidAmount": "Choose one of the amounts or enter an amount in the allowed range.",
-      "gatewayError": "The payment provider could not be reached. Try again in a moment."
-    }
+      "gatewayError": "The payment provider could not be reached. Try again in a moment.",
+      "invalidPlan": "This plan is not available.",
+      "alreadySubscribed": "You already have a subscription. Change it with “Manage subscription”.",
+      "noSubscription": "You have no subscription."
+    },
+    "plans": "Plans",
+    "currentPlan": "Your plan: {plan} —",
+    "subscription_ACTIVE": "active",
+    "subscription_PAST_DUE": "payment overdue",
+    "subscription_INCOMPLETE": "waiting for payment",
+    "subscription_CANCELED": "canceled",
+    "renewsOn": "Renews on {date}.",
+    "endsOn": "Ends on {date}.",
+    "per_MONTH": "month",
+    "per_YEAR": "year",
+    "planCredits": "Adds {amount} in credits every period; unused credits stay in your balance.",
+    "subscribe": "Subscribe to {plan}",
+    "manage": "Manage subscription",
+    "subscribedNotice": "Thank you for subscribing! The plan's credits appear as soon as the first payment is confirmed."
   },
   "AdminBilling": {
     "title": "Billing",
@@ -1368,8 +1387,25 @@
       "keysRequired": "Enter all keys before turning the provider on.",
       "connectionFailed": "Saved, but the connection test failed. Check the keys and the server's internet access.",
       "notFound": "Not found.",
-      "unknownUser": "No account uses this email."
-    }
+      "unknownUser": "No account uses this email.",
+      "stripeSyncFailed": "The plan was saved, but Stripe could not be updated. Check the Stripe settings and save again."
+    },
+    "plans": "Plans (Stripe subscriptions)",
+    "plansHint": "Each paid period adds the plan's credits to the subscriber's balance. Changing the price creates a new Stripe price; current subscribers keep theirs.",
+    "planInactive": "hidden",
+    "subscribers": "{count, plural, one {# subscriber} other {# subscribers}}",
+    "notSynced": "not synced with Stripe",
+    "interval_MONTH": "Monthly",
+    "interval_YEAR": "Yearly",
+    "planName": "Plan name",
+    "planDescription": "Short description",
+    "planPrice": "Price per period ({currency})",
+    "planCredits": "Credits per period ({currency})",
+    "planCreditsHint": "Can be higher than the price, as a bonus.",
+    "planInterval": "Billing period",
+    "planActive": "Offer this plan",
+    "savePlan": "Save plan",
+    "addPlan": "Add a plan"
   },
   "AdminBranding": {
     "title": "Branding",
@@ -1459,5 +1495,12 @@
       "notFound": "This webhook or delivery no longer exists.",
       "tooMany": "You can have at most 20 webhooks."
     }
+  },
+  "Pricing": {
+    "title": "Pricing",
+    "intro": "Pay only for what your agents do: buy credits once or subscribe to a plan that adds credits every period.",
+    "welcome": "New accounts get {amount} in credits to try the agents.",
+    "packs": "Credit packs",
+    "cta": "Get credits"
   }
 }

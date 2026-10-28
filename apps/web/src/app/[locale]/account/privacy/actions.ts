@@ -1,10 +1,11 @@
 'use server';
 
-import { settleBeforeDelete } from '@rentagent/billing';
+import { cancelStripeSubscription, settleBeforeDelete } from '@rentagent/billing';
 import { rateLimit } from '@rentagent/core';
 import { can } from '@rentagent/shared';
 import { audit } from '@/lib/server/audit';
 import { getAuth } from '@/lib/server/auth';
+import { getBillingConfig } from '@/lib/server/billing';
 import { ACTIVE_RUN_STATUSES } from '@/lib/server/runs';
 import { db, redis } from '@/lib/server/runtime';
 import { getCurrentUser } from '@/lib/server/session';
@@ -36,6 +37,20 @@ export async function deleteAccount(password: string): Promise<DeleteAccountResu
     return { ok: false, error: 'wrongPassword' };
   }
 
+  // Running subscriptions are canceled at the gateway first, so nobody is billed for a deleted account.
+  const subscriptions = await db().subscription.findMany({
+    where: { userId: user.id, status: { in: ['ACTIVE', 'PAST_DUE', 'INCOMPLETE'] } },
+  });
+  if (subscriptions.length > 0) {
+    const billing = await getBillingConfig();
+    if (!billing.stripe) return { ok: false, error: 'subscriptionActive' };
+    try {
+      for (const subscription of subscriptions)
+        await cancelStripeSubscription(billing.stripe, subscription.gatewayRef);
+    } catch {
+      return { ok: false, error: 'subscriptionActive' };
+    }
+  }
   // Holds are settled first; ledger entries stay (accounting) without the account.
   const held = await db().run.findMany({
     where: { userId: user.id, settledAt: null, holdMinor: { gt: 0n } },

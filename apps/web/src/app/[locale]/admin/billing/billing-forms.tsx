@@ -8,6 +8,7 @@ import {
   adjustWallet,
   type BillingActionResult,
   saveBillingSettings,
+  savePlan,
   savePayPalSettings,
   saveStripeSettings,
 } from './actions';
@@ -323,6 +324,109 @@ export function AdjustWalletForm({ currency }: { currency: string }) {
       </div>
       <SubmitButton pending={pending} pendingLabel={t('saving')}>
         {t('adjust')}
+      </SubmitButton>
+    </form>
+  );
+}
+
+export interface PlanFormValues {
+  id: string | null;
+  name: string;
+  description: string;
+  price: string;
+  credits: string;
+  interval: 'MONTH' | 'YEAR';
+  active: boolean;
+}
+
+export function PlanForm({ values, currency }: { values: PlanFormValues; currency: string }) {
+  const { pending, submit, error, message, t } = useBillingForm();
+  const prefix = values.id ?? 'new';
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const get = (name: string) => String(form.get(name) ?? '');
+    submit(
+      () =>
+        savePlan({
+          id: values.id,
+          name: get('name'),
+          description: get('description'),
+          price: get('price'),
+          credits: get('credits'),
+          interval: get('interval'),
+          active: form.get('active') === 'on',
+        }),
+      () => {
+        if (!values.id) formElement.reset();
+      },
+    );
+  }
+  return (
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      {message}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          id={`${prefix}-name`}
+          name="name"
+          label={t('planName')}
+          defaultValue={values.name}
+          dir="auto"
+          maxLength={80}
+          error={error('name')}
+        />
+        <TextField
+          id={`${prefix}-description`}
+          name="description"
+          label={t('planDescription')}
+          defaultValue={values.description}
+          dir="auto"
+          maxLength={300}
+          error={error('description')}
+        />
+        <TextField
+          id={`${prefix}-price`}
+          name="price"
+          label={t('planPrice', { currency })}
+          defaultValue={values.price}
+          inputMode="decimal"
+          dir="ltr"
+          error={error('price')}
+        />
+        <TextField
+          id={`${prefix}-credits`}
+          name="credits"
+          label={t('planCredits', { currency })}
+          hint={t('planCreditsHint')}
+          defaultValue={values.credits}
+          inputMode="decimal"
+          dir="ltr"
+          error={error('credits')}
+        />
+      </div>
+      <div className="flex flex-wrap items-end gap-6">
+        <div>
+          <label htmlFor={`${prefix}-interval`} className="mb-1 block font-semibold">
+            {t('planInterval')}
+          </label>
+          <select
+            id={`${prefix}-interval`}
+            name="interval"
+            defaultValue={values.interval}
+            className="field-input"
+          >
+            <option value="MONTH">{t('interval_MONTH')}</option>
+            <option value="YEAR">{t('interval_YEAR')}</option>
+          </select>
+        </div>
+        <label className="flex items-center gap-3 pb-2">
+          <input type="checkbox" name="active" defaultChecked={values.active} className="size-5" />
+          {t('planActive')}
+        </label>
+      </div>
+      <SubmitButton pending={pending} pendingLabel={t('saving')}>
+        {values.id ? t('savePlan') : t('addPlan')}
       </SubmitButton>
     </form>
   );

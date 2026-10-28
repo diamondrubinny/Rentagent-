@@ -1,5 +1,5 @@
 import { getServerEnv } from '@rentagent/core';
-import { getSettings } from '@rentagent/db';
+import { getSetting, getSettings } from '@rentagent/db';
 import { BUILTIN_LOCALES } from '@rentagent/shared';
 import type { MetadataRoute } from 'next';
 import { getEnabledLocales } from '@/lib/server/locales';
@@ -8,6 +8,14 @@ import { db, logger } from '@/lib/server/runtime';
 export const dynamic = 'force-dynamic';
 
 const PUBLIC_PATHS = ['', '/privacy', '/terms', '/cookies', '/accessibility'];
+
+async function pricingPath(): Promise<string[]> {
+  try {
+    return (await getSetting(db(), 'billing.settings'))?.enabled ? ['/pricing'] : [];
+  } catch {
+    return [];
+  }
+}
 
 async function enabledLocaleCodes(): Promise<string[]> {
   try {
@@ -42,7 +50,7 @@ async function agentPaths(): Promise<string[]> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appUrl = getServerEnv().APP_URL;
-  const paths = [...PUBLIC_PATHS, ...(await agentPaths())];
+  const paths = [...PUBLIC_PATHS, ...(await agentPaths()), ...(await pricingPath())];
   const locales = await enabledLocaleCodes();
   return paths.flatMap((path) =>
     locales.map((locale) => ({

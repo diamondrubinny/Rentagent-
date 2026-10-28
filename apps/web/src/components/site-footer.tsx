@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { LanguageLinks } from '@/components/language-links';
 import { ConsentManager } from '@/components/consent/consent-manager';
 import { Link } from '@/i18n/navigation';
+import { getBillingConfig } from '@/lib/server/billing';
 import { getBranding } from '@/lib/server/branding';
 import { getEnabledLocales } from '@/lib/server/locales';
 
@@ -12,6 +13,9 @@ interface SiteFooterProps {
 
 export async function SiteFooter({ siteName, optionalTrackersEnabled }: SiteFooterProps) {
   const t = await getTranslations('Footer');
+  const billingEnabled = await getBillingConfig()
+    .then((billing) => billing.settings.enabled)
+    .catch(() => false);
   const hidePoweredBy = await getBranding()
     .then(({ branding }) => branding.hidePoweredBy)
     .catch(() => false);
@@ -42,6 +46,13 @@ export async function SiteFooter({ siteName, optionalTrackersEnabled }: SiteFoot
                 {t('cookies')}
               </Link>
             </li>
+            {billingEnabled && (
+              <li>
+                <Link className="link" href="/pricing">
+                  {t('pricing')}
+                </Link>
+              </li>
+            )}
             <li>
               <Link className="link" href="/accessibility">
                 {t('accessibility')}

@@ -21,5 +21,7 @@ export {
   PaymentGateway,
   PaymentStatus,
   WebhookDeliveryStatus,
+  PlanInterval,
+  SubscriptionStatus,
 } from './generated/prisma/client';
 export type { PrismaClient } from './generated/prisma/client';

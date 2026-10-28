@@ -1,4 +1,8 @@
 import {
+  invoicePaymentIntent,
+  mapStripeStatus,
+  recordSubscriptionPayment,
+  upsertSubscription,
   applyRefund,
   completePayment,
   stripeReceiptUrl,
@@ -38,6 +42,24 @@ export async function POST(request: Request) {
     case 'checkout.session.completed':
     case 'checkout.session.async_payment_succeeded': {
       const session = event.data.object;
+      if (session.mode === 'subscription') {
+        // The subscription row; credits come with invoice.paid.
+        const subscription =
+          typeof session.subscription === 'string'
+            ? session.subscription
+            : session.subscription?.id;
+        const customer =
+          typeof session.customer === 'string' ? session.customer : session.customer?.id;
+        const userId = session.metadata?.userId;
+        if (subscription && customer && userId)
+          await upsertSubscription(db(), {
+            userId,
+            planId: session.metadata?.planId ?? null,
+            gatewayRef: subscription,
+            customerRef: customer,
+          });
+        break;
+      }
       if (session.payment_status !== 'paid' || session.mode !== 'payment') break;
       const paymentIntent =
         typeof session.payment_intent === 'string'
@@ -92,6 +114,66 @@ export async function POST(request: Request) {
           await audit('billing.refund', {
             meta: { gateway: 'stripe', amountMinor: deducted.toString() },
           });
+      }
+      break;
+    }
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object;
+      const userId = subscription.metadata?.userId;
+      const customer =
+        typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer.id;
+      const periodEnd = subscription.items.data[0]?.current_period_end;
+      if (userId)
+        await upsertSubscription(db(), {
+          userId,
+          planId: subscription.metadata?.planId ?? null,
+          gatewayRef: subscription.id,
+          customerRef: customer,
+          status:
+            event.type === 'customer.subscription.deleted'
+              ? 'CANCELED'
+              : mapStripeStatus(subscription.status),
+          currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        });
+      break;
+    }
+    case 'invoice.paid': {
+      const invoice = event.data.object;
+      const details = invoice.parent?.subscription_details;
+      const userId = details?.metadata?.userId;
+      const planId = details?.metadata?.planId;
+      if (!details || !userId || !planId || invoice.amount_paid <= 0) break;
+      const plan = await db().plan.findUnique({ where: { id: planId } });
+      if (!plan) {
+        logger().error({ invoice: invoice.id }, 'paid invoice for an unknown plan');
+        break;
+      }
+      const intent = await invoicePaymentIntent(billing.stripe, invoice.id);
+      const result = await recordSubscriptionPayment(db(), {
+        userId,
+        invoiceRef: invoice.id,
+        amountMinor: BigInt(invoice.amount_paid),
+        currency: invoice.currency,
+        creditsMinor: plan.creditsMinor,
+        chargeRef: intent,
+        receiptUrl: invoice.hosted_invoice_url ?? null,
+        planName: plan.name,
+      });
+      if (result === 'credited') {
+        const payment = await db().payment.findUnique({
+          where: { gateway_gatewayRef: { gateway: 'STRIPE', gatewayRef: invoice.id } },
+        });
+        await audit('billing.subscription_paid', {
+          actorId: userId,
+          target: `payment:${payment?.id}`,
+          meta: { plan: plan.id },
+        });
+        if (payment) await emitPaymentEvent('payment.succeeded', payment);
       }
       break;
     }

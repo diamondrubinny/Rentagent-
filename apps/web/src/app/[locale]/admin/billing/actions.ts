@@ -1,6 +1,12 @@
 'use server';
 
-import { applyEntry, lockWallet, testPayPal, testStripe } from '@rentagent/billing';
+import {
+  applyEntry,
+  lockWallet,
+  syncPlanToStripe,
+  testPayPal,
+  testStripe,
+} from '@rentagent/billing';
 import { encryptSecret } from '@rentagent/core';
 import { getSetting, settingUpsert } from '@rentagent/db';
 import { toMinorUnits } from '@rentagent/shared';
@@ -226,5 +232,78 @@ export async function adjustWallet(input: {
     meta: { amountMinor: (negative ? -minor : minor).toString(), currency },
   });
   revalidatePath('/[locale]/admin', 'layout');
+  return { ok: true };
+}
+
+const planSchema = z.object({
+  id: z.uuid().nullable(),
+  name: z.string().trim().min(1, { error: 'required' }).max(80, { error: 'tooLong' }),
+  description: z.string().trim().max(300, { error: 'tooLong' }),
+  price: amount,
+  credits: amount,
+  interval: z.enum(['MONTH', 'YEAR']),
+  active: z.boolean(),
+});
+
+/** Creates or updates a plan and keeps its Stripe product/price in sync. */
+export async function savePlan(input: {
+  id: string | null;
+  name: string;
+  description: string;
+  price: string;
+  credits: string;
+  interval: string;
+  active: boolean;
+}): Promise<BillingActionResult> {
+  const actor = await authorizeAction('billing.manage');
+  if (!actor) return forbidden;
+  const parsed = planSchema.safeParse(input);
+  if (!parsed.success)
+    return { ok: false, error: 'invalid', fieldErrors: fieldErrorsOf(parsed.error) };
+  const billing = await getBillingConfig();
+  let priceMinor: bigint;
+  let creditsMinor: bigint;
+  try {
+    priceMinor = toMinorUnits(parsed.data.price, billing.currency);
+    creditsMinor = toMinorUnits(parsed.data.credits, billing.currency);
+  } catch {
+    return { ok: false, error: 'invalid', fieldErrors: { price: 'invalidDecimal' } };
+  }
+  if (priceMinor <= 0n)
+    return { ok: false, error: 'invalid', fieldErrors: { price: 'invalidDecimal' } };
+  const data = {
+    name: parsed.data.name,
+    description: parsed.data.description,
+    priceMinor,
+    creditsMinor,
+    currency: billing.currency,
+    interval: parsed.data.interval,
+    active: parsed.data.active,
+  };
+  const plan = parsed.data.id
+    ? await db()
+        .plan.update({ where: { id: parsed.data.id }, data })
+        .catch(() => null)
+    : await db().plan.create({ data });
+  if (!plan) return { ok: false, error: 'notFound' };
+  if (billing.stripe) {
+    try {
+      const ids = await syncPlanToStripe(billing.stripe, plan);
+      await db().plan.update({
+        where: { id: plan.id },
+        data: { stripeProductId: ids.productId, stripePriceId: ids.priceId },
+      });
+    } catch {
+      await audit('billing.plan_saved', {
+        actorId: actor.id,
+        target: `plan:${plan.id}`,
+        meta: { stripe: false },
+      });
+      revalidatePath('/', 'layout');
+      return { ok: false, error: 'stripeSyncFailed' };
+    }
+  }
+  await audit('billing.plan_saved', { actorId: actor.id, target: `plan:${plan.id}` });
+  revalidatePath('/', 'layout');
   return { ok: true };
 }

@@ -28,7 +28,8 @@
     "privacySettings": "إعدادات الخصوصية وملفات تعريف الارتباط",
     "languages": "اللغات",
     "rights": "© {year} {siteName}",
-    "poweredBy": "يعمل بواسطة RentAgent"
+    "poweredBy": "يعمل بواسطة RentAgent",
+    "pricing": "الأسعار"
   },
   "Home": {
     "title": "وكلاء ذكاء اصطناعي يعملون من أجلك",
@@ -1190,7 +1191,8 @@
       "wrongPassword": "كلمة المرور غير صحيحة.",
       "staffAccount": "لا يمكن حذف حسابات الفريق من هنا.",
       "rateLimited": "محاولات كثيرة جدًا. حاول لاحقًا.",
-      "signedOut": "انتهت جلستك. سجّل الدخول مجددًا."
+      "signedOut": "انتهت جلستك. سجّل الدخول مجددًا.",
+      "subscriptionActive": "تعذّر إلغاء اشتراكك تلقائيًا. ألغِه من صفحة الفوترة ثم حاول مجددًا."
     }
   },
   "AdminLanguages": {
@@ -1300,8 +1302,25 @@
       "gatewayUnavailable": "طريقة الدفع هذه غير متاحة.",
       "rateLimited": "محاولات كثيرة جدًا. حاول لاحقًا.",
       "invalidAmount": "اختر أحد المبالغ أو أدخل مبلغًا ضمن النطاق المسموح.",
-      "gatewayError": "تعذّر الوصول إلى مزوّد الدفع. حاول بعد قليل."
-    }
+      "gatewayError": "تعذّر الوصول إلى مزوّد الدفع. حاول بعد قليل.",
+      "invalidPlan": "هذه الخطة غير متاحة.",
+      "alreadySubscribed": "لديك اشتراك بالفعل. غيّره من «إدارة الاشتراك».",
+      "noSubscription": "ليس لديك اشتراك."
+    },
+    "plans": "الخطط",
+    "currentPlan": "خطتك: {plan} —",
+    "subscription_ACTIVE": "نشطة",
+    "subscription_PAST_DUE": "دفعة متأخرة",
+    "subscription_INCOMPLETE": "بانتظار الدفع",
+    "subscription_CANCELED": "ملغاة",
+    "renewsOn": "تتجدد في {date}.",
+    "endsOn": "تنتهي في {date}.",
+    "per_MONTH": "شهر",
+    "per_YEAR": "سنة",
+    "planCredits": "تضيف {amount} رصيدًا كل فترة؛ يبقى الرصيد غير المستخدم في حسابك.",
+    "subscribe": "الاشتراك في {plan}",
+    "manage": "إدارة الاشتراك",
+    "subscribedNotice": "شكرًا لاشتراكك! سيظهر رصيد الخطة فور تأكيد الدفعة الأولى."
   },
   "AdminBilling": {
     "title": "الفوترة",
@@ -1368,8 +1387,25 @@
       "keysRequired": "أدخل كل المفاتيح قبل تفعيل المزوّد.",
       "connectionFailed": "تم الحفظ، لكن اختبار الاتصال فشل. تحقّق من المفاتيح ومن وصول الخادم إلى الإنترنت.",
       "notFound": "غير موجود.",
-      "unknownUser": "لا يوجد حساب بهذا البريد."
-    }
+      "unknownUser": "لا يوجد حساب بهذا البريد.",
+      "stripeSyncFailed": "حُفظت الخطة لكن تعذّر تحديث Stripe. تحقّق من إعدادات Stripe واحفظ مجددًا."
+    },
+    "plans": "الخطط (اشتراكات Stripe)",
+    "plansHint": "كل فترة مدفوعة تضيف رصيد الخطة إلى رصيد المشترك. تغيير السعر ينشئ سعرًا جديدًا في Stripe؛ ويحتفظ المشتركون الحاليون بسعرهم.",
+    "planInactive": "مخفية",
+    "subscribers": "{count, plural, zero {لا مشتركين} one {مشترك واحد} two {مشتركان} few {# مشتركين} many {# مشتركًا} other {# مشترك}}",
+    "notSynced": "غير متزامنة مع Stripe",
+    "interval_MONTH": "شهري",
+    "interval_YEAR": "سنوي",
+    "planName": "اسم الخطة",
+    "planDescription": "وصف قصير",
+    "planPrice": "السعر لكل فترة ({currency})",
+    "planCredits": "الرصيد لكل فترة ({currency})",
+    "planCreditsHint": "يمكن أن يكون أعلى من السعر كمكافأة.",
+    "planInterval": "فترة الفوترة",
+    "planActive": "عرض هذه الخطة",
+    "savePlan": "حفظ الخطة",
+    "addPlan": "إضافة خطة"
   },
   "AdminBranding": {
     "title": "الهوية البصرية",
@@ -1459,5 +1495,12 @@
       "notFound": "هذا الـ Webhook أو الإرسال لم يعد موجودًا.",
       "tooMany": "يمكنك إنشاء 20 Webhook كحد أقصى."
     }
+  },
+  "Pricing": {
+    "title": "الأسعار",
+    "intro": "ادفع فقط مقابل ما ينجزه الوكلاء: اشترِ رصيدًا مرة واحدة أو اشترك في خطة تضيف رصيدًا كل فترة.",
+    "welcome": "تحصل الحسابات الجديدة على رصيد بقيمة {amount} لتجربة الوكلاء.",
+    "packs": "باقات الرصيد",
+    "cta": "احصل على رصيد"
   }
 }

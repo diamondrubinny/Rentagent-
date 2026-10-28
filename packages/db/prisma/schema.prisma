@@ -130,6 +130,7 @@ model User {
   files         File[]
   conversations Conversation[]
   wallet        Wallet?
+  subscriptions Subscription[]
 
   @@index([role])
   @@index([createdAt])
@@ -783,4 +784,59 @@ model WebhookDelivery {
   @@index([webhookId, createdAt])
   @@index([createdAt])
   @@map("webhook_deliveries")
+}
+
+enum PlanInterval {
+  MONTH
+  YEAR
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  INCOMPLETE
+  CANCELED
+}
+
+/// A recurring plan: each paid period adds `creditsMinor` to the subscriber's wallet.
+model Plan {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String       @db.VarChar(80)
+  description     String       @default("") @db.VarChar(300)
+  priceMinor      BigInt       @map("price_minor")
+  currency        String       @db.Char(3)
+  interval        PlanInterval @default(MONTH)
+  creditsMinor    BigInt       @map("credits_minor")
+  active          Boolean      @default(true)
+  sortOrder       Int          @default(0) @map("sort_order")
+  stripeProductId String?      @map("stripe_product_id") @db.VarChar(255)
+  stripePriceId   String?      @map("stripe_price_id") @db.VarChar(255)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @map("user_id") @db.VarChar(64)
+  planId            String?            @map("plan_id") @db.Uuid
+  gateway           PaymentGateway
+  /// Subscription id at the gateway (Stripe sub_…).
+  gatewayRef        String             @map("gateway_ref") @db.VarChar(255)
+  customerRef       String             @map("customer_ref") @db.VarChar(255)
+  status            SubscriptionStatus @default(INCOMPLETE)
+  currentPeriodEnd  DateTime?          @map("current_period_end") @db.Timestamptz(3)
+  cancelAtPeriodEnd Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@unique([gateway, gatewayRef])
+  @@index([userId, status])
+  @@map("subscriptions")
 }

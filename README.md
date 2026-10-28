@@ -6,7 +6,7 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 
 - Product plan and roadmap: [`PLAN.md`](PLAN.md) (Hebrew)
 - Server requirements for customers: [`deploy/REQUIREMENTS.md`](deploy/REQUIREMENTS.md)
-- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md), [`docs/phase-5-5.md`](docs/phase-5-5.md)
+- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md), [`docs/phase-5-5.md`](docs/phase-5-5.md), [`docs/phase-6.md`](docs/phase-6.md)
 
 ## Status
 
@@ -27,7 +27,11 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 - Phase 5.5 (languages): enable any of 53 UI languages, machine translation through the operator's
   AI with ICU format checks and review status, string editor with overrides, default language,
   agent name/description translation.
-- Next: customization and billing (6), licensing and compliance (7).
+- Phase 6 (customization and billing): credit wallets with an append-only ledger and per-run
+  holds; Stripe and PayPal top-ups; Stripe subscriptions with plans and the customer portal;
+  branding with contrast-checked colors, logo and favicon; feature switches; signed outgoing
+  webhooks; public pricing page.
+- Next: licensing, compliance and launch (7).
 
 ## Repository layout
 

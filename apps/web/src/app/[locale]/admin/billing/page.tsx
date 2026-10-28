@@ -1,12 +1,18 @@
 import { getServerEnv } from '@rentagent/core';
 import { getSetting } from '@rentagent/db';
-import { formatMoney } from '@rentagent/shared';
+import { formatMoney, fromMinorUnits } from '@rentagent/shared';
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { billingOverview, getBillingConfig } from '@/lib/server/billing';
 import { db } from '@/lib/server/runtime';
 import { requirePermission } from '@/lib/server/session';
-import { AdjustWalletForm, BillingSettingsForm, PayPalForm, StripeForm } from './billing-forms';
+import {
+  AdjustWalletForm,
+  BillingSettingsForm,
+  PayPalForm,
+  PlanForm,
+  StripeForm,
+} from './billing-forms';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -32,6 +38,12 @@ export default async function AdminBillingPage({ params }: PageProps) {
     getSetting(db(), 'billing.paypal'),
   ]);
   const { revenue, refunds, charged, outstanding, payments } = await billingOverview();
+  const plans = await db().plan.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+  const subscribers = await db().subscription.groupBy({
+    by: ['planId'],
+    where: { status: 'ACTIVE' },
+    _count: { _all: true },
+  });
   const users = await db().user.findMany({
     where: { id: { in: payments.flatMap((p) => (p.userId ? [p.userId] : [])) } },
     select: { id: true, email: true },
@@ -93,7 +105,9 @@ export default async function AdminBillingPage({ params }: PageProps) {
           {t('stripeEvents')}{' '}
           <code dir="ltr">
             checkout.session.completed, checkout.session.async_payment_succeeded,
-            checkout.session.async_payment_failed, checkout.session.expired, charge.refunded
+            checkout.session.async_payment_failed, checkout.session.expired, charge.refunded,
+            invoice.paid, customer.subscription.created, customer.subscription.updated,
+            customer.subscription.deleted
           </code>
         </p>
         <StripeForm
@@ -126,6 +140,56 @@ export default async function AdminBillingPage({ params }: PageProps) {
           hasSecret={Boolean(paypal?.clientSecretEncrypted)}
           webhookId={paypal?.webhookId ?? ''}
         />
+      </section>
+
+      <section aria-labelledby="billing-plans" className="space-y-4">
+        <h2 id="billing-plans" className="text-xl font-bold">
+          {t('plans')}
+        </h2>
+        <p className="text-sm text-muted">{t('plansHint')}</p>
+        {plans.map((plan) => (
+          <details key={plan.id} className="rounded-lg border border-border">
+            <summary className="cursor-pointer p-3 font-semibold">
+              <span dir="auto">{plan.name}</span> ·{' '}
+              <span dir="ltr">{formatMoney(plan.priceMinor, plan.currency, locale)}</span> /{' '}
+              {t(`interval_${plan.interval}`)}
+              {!plan.active && ` · ${t('planInactive')}`}
+              {` · ${t('subscribers', { count: subscribers.find((row) => row.planId === plan.id)?._count._all ?? 0 })}`}
+              {!plan.stripePriceId && <span className="ms-2 text-danger">{t('notSynced')}</span>}
+            </summary>
+            <div className="p-4">
+              <PlanForm
+                currency={currency}
+                values={{
+                  id: plan.id,
+                  name: plan.name,
+                  description: plan.description,
+                  price: fromMinorUnits(plan.priceMinor, plan.currency),
+                  credits: fromMinorUnits(plan.creditsMinor, plan.currency),
+                  interval: plan.interval,
+                  active: plan.active,
+                }}
+              />
+            </div>
+          </details>
+        ))}
+        <details className="rounded-lg border border-border">
+          <summary className="cursor-pointer p-3 font-semibold">{t('addPlan')}</summary>
+          <div className="p-4">
+            <PlanForm
+              currency={currency}
+              values={{
+                id: null,
+                name: '',
+                description: '',
+                price: '',
+                credits: '',
+                interval: 'MONTH',
+                active: true,
+              }}
+            />
+          </div>
+        </details>
       </section>
 
       <section aria-labelledby="billing-adjust" className="space-y-4">

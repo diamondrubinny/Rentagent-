@@ -28,7 +28,8 @@
     "privacySettings": "הגדרות פרטיות ועוגיות",
     "languages": "שפות",
     "rights": "© {year} {siteName}",
-    "poweredBy": "מופעל על ידי RentAgent"
+    "poweredBy": "מופעל על ידי RentAgent",
+    "pricing": "מחירים"
   },
   "Home": {
     "title": "סוכני AI שעובדים בשבילכם",
@@ -1190,7 +1191,8 @@
       "wrongPassword": "הסיסמה שגויה.",
       "staffAccount": "אי אפשר למחוק כאן חשבון צוות.",
       "rateLimited": "יותר מדי ניסיונות. נסו שוב מאוחר יותר.",
-      "signedOut": "החיבור שלכם הסתיים. התחברו מחדש."
+      "signedOut": "החיבור שלכם הסתיים. התחברו מחדש.",
+      "subscriptionActive": "לא ניתן היה לבטל את המנוי אוטומטית. בטלו אותו במסך החיוב ונסו שוב."
     }
   },
   "AdminLanguages": {
@@ -1300,8 +1302,25 @@
       "gatewayUnavailable": "אמצעי התשלום הזה לא זמין.",
       "rateLimited": "יותר מדי ניסיונות. נסו שוב מאוחר יותר.",
       "invalidAmount": "בחרו אחד מהסכומים או הזינו סכום בטווח המותר.",
-      "gatewayError": "לא ניתן היה להתחבר לספק התשלומים. נסו שוב בעוד רגע."
-    }
+      "gatewayError": "לא ניתן היה להתחבר לספק התשלומים. נסו שוב בעוד רגע.",
+      "invalidPlan": "התוכנית הזו לא זמינה.",
+      "alreadySubscribed": "כבר יש לכם מנוי. אפשר לשנות אותו ב״ניהול המנוי״.",
+      "noSubscription": "אין לכם מנוי."
+    },
+    "plans": "תוכניות",
+    "currentPlan": "התוכנית שלכם: {plan} —",
+    "subscription_ACTIVE": "פעילה",
+    "subscription_PAST_DUE": "תשלום באיחור",
+    "subscription_INCOMPLETE": "ממתינה לתשלום",
+    "subscription_CANCELED": "בוטלה",
+    "renewsOn": "מתחדשת ב־{date}.",
+    "endsOn": "מסתיימת ב־{date}.",
+    "per_MONTH": "חודש",
+    "per_YEAR": "שנה",
+    "planCredits": "מוסיפה {amount} בקרדיטים בכל תקופה; קרדיטים שלא נוצלו נשארים ביתרה.",
+    "subscribe": "הרשמה ל־{plan}",
+    "manage": "ניהול המנוי",
+    "subscribedNotice": "תודה על ההרשמה! הקרדיטים של התוכנית יופיעו מיד כשהתשלום הראשון יאושר."
   },
   "AdminBilling": {
     "title": "חיוב",
@@ -1368,8 +1387,25 @@
       "keysRequired": "הזינו את כל המפתחות לפני הפעלת הספק.",
       "connectionFailed": "נשמר, אבל בדיקת החיבור נכשלה. בדקו את המפתחות ואת הגישה של השרת לאינטרנט.",
       "notFound": "לא נמצא.",
-      "unknownUser": "אין חשבון עם האימייל הזה."
-    }
+      "unknownUser": "אין חשבון עם האימייל הזה.",
+      "stripeSyncFailed": "התוכנית נשמרה, אבל לא ניתן היה לעדכן את Stripe. בדקו את הגדרות Stripe ושמרו שוב."
+    },
+    "plans": "תוכניות (מנויי Stripe)",
+    "plansHint": "כל תקופה ששולמה מוסיפה את הקרדיטים של התוכנית ליתרת המנוי. שינוי מחיר יוצר מחיר חדש ב־Stripe; מנויים קיימים נשארים עם הקודם.",
+    "planInactive": "מוסתרת",
+    "subscribers": "{count, plural, one {מנוי אחד} other {# מנויים}}",
+    "notSynced": "לא מסונכרנת עם Stripe",
+    "interval_MONTH": "חודשי",
+    "interval_YEAR": "שנתי",
+    "planName": "שם התוכנית",
+    "planDescription": "תיאור קצר",
+    "planPrice": "מחיר לתקופה ({currency})",
+    "planCredits": "קרדיטים לתקופה ({currency})",
+    "planCreditsHint": "יכול להיות גבוה מהמחיר, כבונוס.",
+    "planInterval": "תקופת חיוב",
+    "planActive": "להציע את התוכנית",
+    "savePlan": "שמירת התוכנית",
+    "addPlan": "הוספת תוכנית"
   },
   "AdminBranding": {
     "title": "מיתוג",
@@ -1459,5 +1495,12 @@
       "notFound": "ה־Webhook או המשלוח כבר לא קיימים.",
       "tooMany": "אפשר להגדיר עד 20 Webhooks."
     }
+  },
+  "Pricing": {
+    "title": "מחירים",
+    "intro": "משלמים רק על מה שהסוכנים עושים: קונים קרדיטים פעם אחת או נרשמים לתוכנית שמוסיפה קרדיטים בכל תקופה.",
+    "welcome": "חשבונות חדשים מקבלים {amount} בקרדיטים כדי לנסות את הסוכנים.",
+    "packs": "חבילות קרדיט",
+    "cta": "קבלת קרדיטים"
   }
 }

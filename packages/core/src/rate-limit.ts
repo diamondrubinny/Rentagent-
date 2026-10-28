@@ -7,27 +7,36 @@ export interface RateLimitResult {
 }
 
 /**
- * Fixed-window rate limiter backed by Redis. Fails closed (denies) when Redis
- * is unavailable for sensitive endpoints, unless `failOpen` is set.
+ * Sliding-window rate limiter backed by Redis: the previous window counts in
+ * proportion to how much of it still overlaps, so bursts across a window
+ * boundary cannot double the limit. Fails closed (denies) when Redis is
+ * unavailable for sensitive endpoints, unless `failOpen` is set.
  */
 export async function rateLimit(
   redis: Pick<Redis, 'multi'>,
   key: string,
   limit: number,
   windowSeconds: number,
-  { failOpen = false }: { failOpen?: boolean } = {},
+  { failOpen = false, now = Date.now() }: { failOpen?: boolean; now?: number } = {},
 ): Promise<RateLimitResult> {
-  const bucket = `rl:${key}:${Math.floor(Date.now() / 1000 / windowSeconds)}`;
+  const seconds = now / 1000;
+  const window = Math.floor(seconds / windowSeconds);
+  const elapsed = (seconds % windowSeconds) / windowSeconds;
+  const current = `rl:${key}:${window}`;
+  const previous = `rl:${key}:${window - 1}`;
   try {
-    const results = await redis.multi().incr(bucket).expire(bucket, windowSeconds).exec();
-    const count = Number(results?.[0]?.[1] ?? 0);
+    const results = await redis
+      .multi()
+      .incr(current)
+      .expire(current, windowSeconds * 2)
+      .get(previous)
+      .exec();
+    const count = Number(results?.[0]?.[1] ?? 0) + Number(results?.[2]?.[1] ?? 0) * (1 - elapsed);
     const allowed = count <= limit;
     return {
       allowed,
-      remaining: Math.max(0, limit - count),
-      retryAfterSeconds: allowed
-        ? 0
-        : windowSeconds - (Math.floor(Date.now() / 1000) % windowSeconds),
+      remaining: Math.max(0, Math.floor(limit - count)),
+      retryAfterSeconds: allowed ? 0 : Math.ceil(windowSeconds * (1 - elapsed)),
     };
   } catch {
     return { allowed: failOpen, remaining: 0, retryAfterSeconds: windowSeconds };
@@ -35,7 +44,7 @@ export async function rateLimit(
 }
 
 /**
- * Atomic fixed-window consume, shaped for Better Auth's `rateLimit.customStorage`.
+ * Atomic sliding-window consume, shaped for Better Auth's `rateLimit.customStorage`.
  * Fails open when Redis is unavailable so an outage does not lock everyone out;
  * sensitive app endpoints use `rateLimit` (fail closed) instead.
  */
