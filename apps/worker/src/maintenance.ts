@@ -1,5 +1,6 @@
 import { toVectorLiteral, type RuntimeDeps } from '@rentagent/agent-runtime';
 import { embedTexts } from '@rentagent/ai-gateway';
+import { settleBeforeDelete } from '@rentagent/billing';
 import { getSetting } from '@rentagent/db';
 import { agentSearchDocument, agentSearchText } from '@rentagent/shared';
 
@@ -60,6 +61,23 @@ export async function purgeExpired(
   if (!days || days <= 0) return null;
   const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   const active = { notIn: ['QUEUED', 'RUNNING', 'WAITING_APPROVAL'] as never[] };
+  // Holds of runs about to be deleted are settled first (credits are never lost with the rows).
+  const expiring = await db.run.findMany({
+    where: {
+      settledAt: null,
+      holdMinor: { gt: 0n },
+      status: { notIn: ['QUEUED', 'RUNNING'] },
+      OR: [
+        { conversation: { updatedAt: { lt: cutoff } } },
+        { conversationId: null, createdAt: { lt: cutoff } },
+      ],
+    },
+    select: { id: true },
+  });
+  await settleBeforeDelete(
+    db,
+    expiring.map((run) => run.id),
+  );
   const conversations = await db.conversation.deleteMany({
     where: { updatedAt: { lt: cutoff }, runs: { none: { status: { in: ['QUEUED', 'RUNNING'] } } } },
   });

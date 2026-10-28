@@ -17,6 +17,7 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
   const tAgents = await getTranslations('AdminAgents');
   const tTools = await getTranslations('AdminTools');
   const tLanguages = await getTranslations('AdminLanguages');
+  const tBilling = await getTranslations('AdminBilling');
   const links = [
     { href: '/admin', label: t('overview.title'), show: true },
     { href: '/admin/users', label: t('users.title'), show: can(user.role, 'users.read') },
@@ -24,6 +25,11 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
     { href: '/admin/agents', label: tAgents('list.title'), show: can(user.role, 'agents.manage') },
     { href: '/admin/runs', label: tAgents('runs.title'), show: can(user.role, 'agents.manage') },
     { href: '/admin/tools', label: tTools('title'), show: can(user.role, 'settings.manage') },
+    {
+      href: '/admin/billing',
+      label: tBilling('title'),
+      show: can(user.role, 'billing.manage'),
+    },
     {
       href: '/admin/languages',
       label: tLanguages('title'),

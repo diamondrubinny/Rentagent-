@@ -1,14 +1,16 @@
 import { can } from '@rentagent/shared';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { SignOutButton } from '@/components/sign-out-button';
 import { Link } from '@/i18n/navigation';
 import { getCurrentUser } from '@/lib/server/session';
+import { walletBalanceLabel } from '@/lib/server/billing';
 import { getSiteConfig } from '@/lib/server/site';
 
 export async function SiteHeader({ siteName }: { siteName: string }) {
   const t = await getTranslations('Header');
   const site = await getSiteConfig();
   const user = site.setupComplete ? await getCurrentUser() : null;
+  const balance = user ? await walletBalanceLabel(user.id, await getLocale()) : null;
   return (
     <header className="border-b border-border bg-surface">
       <nav
@@ -34,6 +36,13 @@ export async function SiteHeader({ siteName }: { siteName: string }) {
                     {t('chats')}
                   </Link>
                 </li>
+                {balance !== null && (
+                  <li>
+                    <Link className="link" href="/account/billing">
+                      {t('credits', { amount: balance })}
+                    </Link>
+                  </li>
+                )}
                 {can(user.role, 'admin.access') && (
                   <li>
                     <Link className="link" href="/admin">

@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
     '@rentagent/db',
     '@rentagent/mail',
     '@rentagent/ai-gateway',
+    '@rentagent/agent-runtime',
+    '@rentagent/billing',
   ],
   serverExternalPackages: ['pino', 'pg', 'nodemailer', 'unpdf'],
   poweredByHeader: false,

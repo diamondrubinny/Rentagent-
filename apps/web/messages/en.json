@@ -16,7 +16,8 @@
     "signUp": "Sign up",
     "signOut": "Sign out",
     "agents": "Agents",
-    "chats": "My chats"
+    "chats": "My chats",
+    "credits": "Credits: {amount}"
   },
   "Footer": {
     "legalNav": "Legal and accessibility",
@@ -327,7 +328,8 @@
         "revokedOthers": "All other devices were signed out."
       }
     },
-    "privacy": "Privacy and data"
+    "privacy": "Privacy and data",
+    "billing": "Billing and credits"
   },
   "Admin": {
     "nav": "Admin",
@@ -794,7 +796,16 @@
       "followUps": "Allow follow-up messages",
       "followUpsHint": "Users can continue the chat after the first answer.",
       "historyTurns": "Previous exchanges sent with each message",
-      "historyTurnsHint": "1–50. More context costs more tokens."
+      "historyTurnsHint": "1–50. More context costs more tokens.",
+      "pricing": "Pricing",
+      "pricingHint": "Applies when billing is turned on. Amounts are in the installation's currency.",
+      "pricing_usage": "By usage (model prices)",
+      "pricing_per_task": "Fixed price per task",
+      "pricing_free": "Free",
+      "maxPerTask": "Maximum per task",
+      "maxPerTaskHint": "The task stops when it reaches this amount; credits not used are returned.",
+      "perTask": "Price per task",
+      "perTaskHint": "Charged only when the task succeeds."
     },
     "tools": {
       "calculator": {
@@ -1051,7 +1062,10 @@
       "knowledge_search": "Searches its knowledge base",
       "send_email": "Sends an email",
       "mcp": "Uses tools of {name}"
-    }
+    },
+    "priceTitle": "Price",
+    "pricePerTask": "{amount} per completed task",
+    "priceUsage": "By usage, at most {amount} per task"
   },
   "Chat": {
     "listTitle": "My chats",
@@ -1122,7 +1136,8 @@
       "rate_limit": "The service is busy. Try again in a few minutes.",
       "server": "The service is unavailable at the moment. Try again later.",
       "network": "The service could not be reached. Try again later.",
-      "internal": "Something went wrong. Try again in a moment."
+      "internal": "Something went wrong. Try again in a moment.",
+      "credit_limit": "The credits reserved for this task ran out before it finished. Top up and try again."
     },
     "errors": {
       "signedOut": "Your session has ended. Sign in again.",
@@ -1136,7 +1151,9 @@
       "alreadyDecided": "This action was already decided.",
       "alreadyFinished": "The task has already finished.",
       "notFinished": "Rate the answer after it is finished.",
-      "generic": "Something went wrong. Please try again."
+      "generic": "Something went wrong. Please try again.",
+      "insufficientCredits": "You do not have enough credits for this task.",
+      "topUpLink": "Top up credits"
     },
     "validation": {
       "required": "Write a message first.",
@@ -1238,5 +1255,118 @@
     "save": "Save",
     "markReviewed": "Mark as reviewed",
     "reset": "Reset"
+  },
+  "Billing": {
+    "title": "Billing and credits",
+    "paid": "Thank you! Your payment was received; the credits appear as soon as the payment provider confirms it.",
+    "pending": "Your payment is being processed. The credits appear once it is confirmed.",
+    "failed": "The payment could not be completed. You were not charged.",
+    "canceled": "The payment was canceled. You were not charged.",
+    "balance": "Your balance",
+    "held": "{amount} reserved for tasks in progress",
+    "signupCredit": "Includes your welcome credit.",
+    "howCharged": "Each task reserves credits when it starts; you pay only for what it actually used and the rest is returned.",
+    "topUp": "Add credits",
+    "noGateway": "Payments are not available yet. Contact the site administrator.",
+    "customRange": "Between {min} and {max}.",
+    "secureNotice": "You pay on the payment provider's secure page. Card details are never sent to this site.",
+    "history": "History",
+    "noHistory": "No credit movements yet.",
+    "date": "Date",
+    "description": "Description",
+    "amount": "Amount",
+    "entry_GRANT": "Welcome credit",
+    "entry_TOPUP": "Credits added",
+    "entry_CAPTURE": "Task: {agent}",
+    "entry_REFUND": "Refund of a payment",
+    "entry_ADJUST": "Correction by the site team",
+    "entry_HOLD": "Reserved for a task",
+    "entry_RELEASE": "Reservation returned",
+    "payments": "Payments",
+    "refunded": "refunded {amount}",
+    "receipt": "Receipt",
+    "opensNewTab": "(opens in a new tab)",
+    "chooseAmount": "Amount",
+    "otherAmount": "Other amount",
+    "amountIn": "Amount ({currency})",
+    "redirecting": "Opening the payment page…",
+    "pay_stripe": "Pay by card",
+    "pay_paypal": "Pay with PayPal",
+    "errors": {
+      "signedOut": "Your session has ended. Sign in again.",
+      "disabled": "Payments are turned off.",
+      "gatewayUnavailable": "This payment method is not available.",
+      "rateLimited": "Too many attempts. Try again later.",
+      "invalidAmount": "Choose one of the amounts or enter an amount in the allowed range.",
+      "gatewayError": "The payment provider could not be reached. Try again in a moment."
+    }
+  },
+  "AdminBilling": {
+    "title": "Billing",
+    "intro": "Users buy credits in {currency} and pay for agent tasks from their balance. Card data stays with the payment provider.",
+    "overview": "Overview",
+    "revenue30": "Payments, last 30 days",
+    "refunds30": "Refunded, last 30 days",
+    "charged30": "Charged for tasks, last 30 days",
+    "outstanding": "Unused credits (all users)",
+    "settings": "Credits",
+    "enabled": "Charge for agent tasks",
+    "enabledHint": "When off, agents are free and only the daily task limit applies.",
+    "packs": "Credit packs ({currency})",
+    "packsHint": "Up to 6 amounts, separated by commas.",
+    "customMin": "Minimum custom amount ({currency})",
+    "customMax": "Maximum custom amount ({currency})",
+    "signupCredit": "Welcome credit ({currency})",
+    "signupCreditHint": "Given once to each new account. 0 = none.",
+    "saving": "Saving…",
+    "save": "Save",
+    "saved": "Saved.",
+    "stripeHint": "Cards, wallets and many local payment methods. Check that Stripe supports your business's country.",
+    "webhookUrl": "Webhook URL:",
+    "stripeEvents": "Events:",
+    "paypalHint": "PayPal accounts and cards, in many countries. Use sandbox credentials for testing.",
+    "paypalEvents": "Events:",
+    "gatewayEnabled": "Offer {gateway}",
+    "stripeSecret": "Secret key",
+    "stripeSecretHint": "Starts with sk_live_ or sk_test_ (a restricted key rk_ also works).",
+    "storedHint": "A value is stored. Leave empty to keep it.",
+    "stripeWebhookSecret": "Webhook signing secret (whsec_…)",
+    "automaticTax": "Calculate tax automatically (Stripe Tax)",
+    "automaticTaxHint": "Requires Stripe Tax to be set up in your Stripe account.",
+    "saveGateway": "Save {gateway}",
+    "paypalMode": "Environment",
+    "sandbox": "Sandbox (testing)",
+    "live": "Live",
+    "paypalClientId": "Client ID",
+    "paypalSecret": "Secret",
+    "paypalWebhookId": "Webhook ID",
+    "adjustTitle": "Correct a balance",
+    "adjustHint": "Adds or removes credits with a reason. The user sees the correction in their history; it is recorded in the audit log.",
+    "userEmail": "User email",
+    "adjustAmount": "Amount ({currency}); negative to remove",
+    "adjustAmountHint": "For example 5 or -2.50",
+    "reason": "Reason",
+    "adjust": "Apply correction",
+    "recentPayments": "Recent payments",
+    "noPayments": "No payments yet.",
+    "date": "Date",
+    "user": "User",
+    "gateway": "Provider",
+    "status": "Status",
+    "amount": "Amount",
+    "deletedUser": "Deleted account",
+    "payment_PENDING": "Started",
+    "payment_SUCCEEDED": "Paid",
+    "payment_FAILED": "Failed",
+    "refundedAmount": "Refunded: {amount}",
+    "legalNote": "Tax invoices, VAT and consumer rules depend on your country — have them checked by an accountant or lawyer.",
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "invalid": "Some values are invalid.",
+      "keysRequired": "Enter all keys before turning the provider on.",
+      "connectionFailed": "Saved, but the connection test failed. Check the keys and the server's internet access.",
+      "notFound": "Not found.",
+      "unknownUser": "No account uses this email."
+    }
   }
 }

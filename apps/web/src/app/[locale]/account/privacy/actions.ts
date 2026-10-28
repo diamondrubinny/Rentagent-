@@ -1,5 +1,6 @@
 'use server';
 
+import { settleBeforeDelete } from '@rentagent/billing';
 import { rateLimit } from '@rentagent/core';
 import { can } from '@rentagent/shared';
 import { audit } from '@/lib/server/audit';
@@ -35,6 +36,15 @@ export async function deleteAccount(password: string): Promise<DeleteAccountResu
     return { ok: false, error: 'wrongPassword' };
   }
 
+  // Holds are settled first; ledger entries stay (accounting) without the account.
+  const held = await db().run.findMany({
+    where: { userId: user.id, settledAt: null, holdMinor: { gt: 0n } },
+    select: { id: true },
+  });
+  await settleBeforeDelete(
+    db(),
+    held.map((run) => run.id),
+  );
   await db().$transaction([
     db().run.updateMany({
       where: { userId: user.id, status: { in: [...ACTIVE_RUN_STATUSES] } },

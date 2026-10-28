@@ -26,6 +26,7 @@ const base = {
   fetchAllowedDomains: [],
   outputFormat: 'markdown' as const,
   temperature: null,
+  pricing: { mode: 'usage' as const, perTask: null, maxPerTask: '1' },
   conversation: { followUps: true, historyTurns: 10 },
 };
 

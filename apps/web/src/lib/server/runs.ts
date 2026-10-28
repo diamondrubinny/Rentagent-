@@ -1,4 +1,5 @@
 import 'server-only';
+import { settleRun } from '@rentagent/billing';
 import { enqueueRun, getServerEnv } from '@rentagent/core';
 import { db, redis } from './runtime';
 
@@ -67,6 +68,8 @@ export async function cancelRunAs(
       data: { status: 'REJECTED', decidedById: actorId, decidedAt: new Date() },
     });
     await redis().publish(`run:${runId}`, JSON.stringify({ type: 'status', status: 'CANCELED' }));
+    // Not executing, so the worker will not settle it: release the hold here.
+    await settleRun(db(), runId);
     return { ok: true };
   }
   if (run.status === 'RUNNING') {

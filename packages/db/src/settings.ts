@@ -32,6 +32,29 @@ export interface SettingValues {
   'agents.userDailyRunLimit': number;
   /** Conversations and runs untouched for this many days are deleted; 0 = keep. */
   'privacy.runRetentionDays': number;
+  'billing.settings': {
+    enabled: boolean;
+    /** Decimal amounts in the base currency, e.g. ["10", "25", "50"]. */
+    packs: string[];
+    customMin: string;
+    customMax: string;
+    /** Free credits for each new wallet ("0" = none). */
+    signupCredit: string;
+  };
+  'billing.stripe': {
+    enabled: boolean;
+    secretKeyEncrypted: string;
+    webhookSecretEncrypted: string;
+    /** Requires Stripe Tax to be set up in the Stripe account. */
+    automaticTax: boolean;
+  };
+  'billing.paypal': {
+    enabled: boolean;
+    mode: 'sandbox' | 'live';
+    clientId: string;
+    clientSecretEncrypted: string;
+    webhookId: string;
+  };
   'setup.completedAt': string; // ISO timestamp
 }
 

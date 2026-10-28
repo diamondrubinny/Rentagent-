@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
+import { getBillingConfig } from '@/lib/server/billing';
 import { requireUser } from '@/lib/server/session';
 
 interface AccountLayoutProps {
@@ -12,6 +13,7 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
   const { locale } = await params;
   await requireUser(locale, '/account');
   const t = await getTranslations('Account');
+  const billingEnabled = (await getBillingConfig()).settings.enabled;
   return (
     <div className="grid gap-8 md:grid-cols-[12rem_1fr]">
       <nav aria-label={t('nav')}>
@@ -26,6 +28,13 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
               {t('security.title')}
             </Link>
           </li>
+          {billingEnabled && (
+            <li>
+              <Link className="link" href="/account/billing">
+                {t('billing')}
+              </Link>
+            </li>
+          )}
           <li>
             <Link className="link" href="/account/privacy">
               {t('privacy')}

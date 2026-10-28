@@ -13,6 +13,7 @@
   "dependencies": {
     "@rentagent/agent-runtime": "workspace:*",
     "@rentagent/ai-gateway": "workspace:*",
+    "@rentagent/billing": "workspace:*",
     "@rentagent/core": "workspace:*",
     "@rentagent/db": "workspace:*",
     "@rentagent/mail": "workspace:*",

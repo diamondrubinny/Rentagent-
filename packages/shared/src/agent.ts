@@ -35,6 +35,13 @@ const singleLine = (max: number) =>
     .transform(normalizeSingleLine)
     .pipe(z.string().min(1, { error: 'required' }).max(max, { error: 'tooLong' }));
 
+/** Positive decimal amount with up to 6 decimals, e.g. "0.25". */
+const priceString = z
+  .string()
+  .trim()
+  .regex(/^(?:0|[1-9]\d{0,8})(?:\.\d{1,6})?$/, { error: 'invalidDecimal' })
+  .refine((value) => Number(value) > 0, { error: 'invalidDecimal' });
+
 const toolIdPattern = new RegExp(
   `^(${BUILTIN_TOOLS.join('|')}|http:[0-9a-f-]{36}|mcp:[0-9a-f-]{36})$`,
 );
@@ -91,6 +98,24 @@ export const agentConfigSchema = z
     fetchAllowedDomains: z.array(hostname).max(50),
     outputFormat: z.enum(['markdown', 'text']),
     temperature: z.number().min(0).max(2).nullable(),
+    /**
+     * What users pay per task when billing is on, in the installation's base currency.
+     * usage = model prices of the tokens used, capped at maxPerTask; per_task = fixed,
+     * charged only when the task succeeds.
+     */
+    pricing: z
+      .object({
+        mode: z.enum(['free', 'usage', 'per_task']),
+        perTask: priceString.nullable(),
+        maxPerTask: priceString.nullable(),
+      })
+      .default({ mode: 'usage', perTask: null, maxPerTask: '1' })
+      .superRefine((pricing, ctx) => {
+        if (pricing.mode === 'per_task' && !pricing.perTask)
+          ctx.addIssue({ code: 'custom', path: ['perTask'], message: 'required' });
+        if (pricing.mode === 'usage' && !pricing.maxPerTask)
+          ctx.addIssue({ code: 'custom', path: ['maxPerTask'], message: 'required' });
+      }),
     /** Follow-up messages after the first task; older configs get the defaults. */
     conversation: z
       .object({
@@ -139,6 +164,7 @@ export function defaultAgentConfig(): AgentConfig {
     fetchAllowedDomains: [],
     outputFormat: 'markdown',
     temperature: null,
+    pricing: { mode: 'usage', perTask: null, maxPerTask: '1' },
     conversation: { followUps: true, historyTurns: 10 },
   };
 }

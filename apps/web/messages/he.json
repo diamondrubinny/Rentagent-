@@ -16,7 +16,8 @@
     "signUp": "הרשמה",
     "signOut": "התנתקות",
     "agents": "סוכנים",
-    "chats": "השיחות שלי"
+    "chats": "השיחות שלי",
+    "credits": "קרדיטים: {amount}"
   },
   "Footer": {
     "legalNav": "מידע משפטי ונגישות",
@@ -327,7 +328,8 @@
         "revokedOthers": "כל שאר המכשירים נותקו."
       }
     },
-    "privacy": "פרטיות ומידע"
+    "privacy": "פרטיות ומידע",
+    "billing": "חיוב וקרדיטים"
   },
   "Admin": {
     "nav": "ניהול",
@@ -794,7 +796,16 @@
       "followUps": "לאפשר הודעות המשך",
       "followUpsHint": "משתמשים יכולים להמשיך את השיחה אחרי התשובה הראשונה.",
       "historyTurns": "חילופי דברים קודמים שנשלחים עם כל הודעה",
-      "historyTurnsHint": "1–50. יותר הקשר = יותר טוקנים."
+      "historyTurnsHint": "1–50. יותר הקשר = יותר טוקנים.",
+      "pricing": "תמחור",
+      "pricingHint": "חל כשהחיוב מופעל. הסכומים במטבע של ההתקנה.",
+      "pricing_usage": "לפי שימוש (מחירי המודלים)",
+      "pricing_per_task": "מחיר קבוע למשימה",
+      "pricing_free": "חינם",
+      "maxPerTask": "מקסימום למשימה",
+      "maxPerTaskHint": "המשימה נעצרת כשהיא מגיעה לסכום הזה; קרדיטים שלא נוצלו מוחזרים.",
+      "perTask": "מחיר למשימה",
+      "perTaskHint": "מחויב רק כשהמשימה מצליחה."
     },
     "tools": {
       "calculator": {
@@ -1051,7 +1062,10 @@
       "knowledge_search": "מחפש במאגר הידע שלו",
       "send_email": "שולח מייל",
       "mcp": "משתמש בכלים של {name}"
-    }
+    },
+    "priceTitle": "מחיר",
+    "pricePerTask": "{amount} לכל משימה שהושלמה",
+    "priceUsage": "לפי שימוש, עד {amount} למשימה"
   },
   "Chat": {
     "listTitle": "השיחות שלי",
@@ -1122,7 +1136,8 @@
       "rate_limit": "השירות עמוס. נסו שוב בעוד כמה דקות.",
       "server": "השירות לא זמין כרגע. נסו שוב מאוחר יותר.",
       "network": "לא ניתן היה להתחבר לשירות. נסו שוב מאוחר יותר.",
-      "internal": "משהו השתבש. נסו שוב בעוד רגע."
+      "internal": "משהו השתבש. נסו שוב בעוד רגע.",
+      "credit_limit": "הקרדיטים ששוריינו למשימה נגמרו לפני שהסתיימה. טענו קרדיטים ונסו שוב."
     },
     "errors": {
       "signedOut": "החיבור שלכם הסתיים. התחברו מחדש.",
@@ -1136,7 +1151,9 @@
       "alreadyDecided": "כבר הוחלט על הפעולה הזו.",
       "alreadyFinished": "המשימה כבר הסתיימה.",
       "notFinished": "אפשר לדרג את התשובה אחרי שהיא מסתיימת.",
-      "generic": "משהו השתבש. נסו שוב."
+      "generic": "משהו השתבש. נסו שוב.",
+      "insufficientCredits": "אין לכם מספיק קרדיטים למשימה הזו.",
+      "topUpLink": "טעינת קרדיטים"
     },
     "validation": {
       "required": "כתבו הודעה קודם.",
@@ -1238,5 +1255,118 @@
     "save": "שמירה",
     "markReviewed": "סימון כנבדק",
     "reset": "איפוס"
+  },
+  "Billing": {
+    "title": "חיוב וקרדיטים",
+    "paid": "תודה! התשלום התקבל; הקרדיטים יופיעו ברגע שספק התשלומים יאשר אותו.",
+    "pending": "התשלום בטיפול. הקרדיטים יופיעו אחרי האישור.",
+    "failed": "לא ניתן היה להשלים את התשלום. לא חויבתם.",
+    "canceled": "התשלום בוטל. לא חויבתם.",
+    "balance": "היתרה שלכם",
+    "held": "{amount} שמורים למשימות שבביצוע",
+    "signupCredit": "כולל קרדיט הצטרפות.",
+    "howCharged": "כל משימה משריינת קרדיטים כשהיא מתחילה; משלמים רק על מה שנוצל בפועל והשאר חוזר.",
+    "topUp": "הוספת קרדיטים",
+    "noGateway": "תשלומים עדיין לא זמינים. פנו למנהל האתר.",
+    "customRange": "בין {min} ל־{max}.",
+    "secureNotice": "התשלום מתבצע בדף המאובטח של ספק התשלומים. פרטי כרטיס לא נשלחים לאתר הזה.",
+    "history": "היסטוריה",
+    "noHistory": "עדיין אין תנועות קרדיט.",
+    "date": "תאריך",
+    "description": "תיאור",
+    "amount": "סכום",
+    "entry_GRANT": "קרדיט הצטרפות",
+    "entry_TOPUP": "קרדיטים נוספו",
+    "entry_CAPTURE": "משימה: {agent}",
+    "entry_REFUND": "החזר של תשלום",
+    "entry_ADJUST": "תיקון על ידי צוות האתר",
+    "entry_HOLD": "שוריין למשימה",
+    "entry_RELEASE": "שריון הוחזר",
+    "payments": "תשלומים",
+    "refunded": "הוחזרו {amount}",
+    "receipt": "קבלה",
+    "opensNewTab": "(נפתח בכרטיסייה חדשה)",
+    "chooseAmount": "סכום",
+    "otherAmount": "סכום אחר",
+    "amountIn": "סכום ({currency})",
+    "redirecting": "פותח את דף התשלום…",
+    "pay_stripe": "תשלום בכרטיס",
+    "pay_paypal": "תשלום ב־PayPal",
+    "errors": {
+      "signedOut": "החיבור שלכם הסתיים. התחברו מחדש.",
+      "disabled": "התשלומים כבויים.",
+      "gatewayUnavailable": "אמצעי התשלום הזה לא זמין.",
+      "rateLimited": "יותר מדי ניסיונות. נסו שוב מאוחר יותר.",
+      "invalidAmount": "בחרו אחד מהסכומים או הזינו סכום בטווח המותר.",
+      "gatewayError": "לא ניתן היה להתחבר לספק התשלומים. נסו שוב בעוד רגע."
+    }
+  },
+  "AdminBilling": {
+    "title": "חיוב",
+    "intro": "משתמשים קונים קרדיטים ב־{currency} ומשלמים על משימות של סוכנים מהיתרה. פרטי כרטיס נשארים אצל ספק התשלומים.",
+    "overview": "סקירה",
+    "revenue30": "תשלומים, 30 הימים האחרונים",
+    "refunds30": "החזרים, 30 הימים האחרונים",
+    "charged30": "חויב על משימות, 30 הימים האחרונים",
+    "outstanding": "קרדיטים שלא נוצלו (כל המשתמשים)",
+    "settings": "קרדיטים",
+    "enabled": "חיוב על משימות של סוכנים",
+    "enabledHint": "כשכבוי, הסוכנים חינמיים וחלה רק מגבלת המשימות היומית.",
+    "packs": "חבילות קרדיט ({currency})",
+    "packsHint": "עד 6 סכומים, מופרדים בפסיקים.",
+    "customMin": "סכום מותאם מינימלי ({currency})",
+    "customMax": "סכום מותאם מקסימלי ({currency})",
+    "signupCredit": "קרדיט הצטרפות ({currency})",
+    "signupCreditHint": "ניתן פעם אחת לכל חשבון חדש. 0 = ללא.",
+    "saving": "שומר…",
+    "save": "שמירה",
+    "saved": "נשמר.",
+    "stripeHint": "כרטיסים, ארנקים דיגיטליים ואמצעי תשלום מקומיים רבים. בדקו ש־Stripe תומך במדינה של העסק שלכם.",
+    "webhookUrl": "כתובת Webhook:",
+    "stripeEvents": "אירועים:",
+    "paypalHint": "חשבונות PayPal וכרטיסים, במדינות רבות. השתמשו בפרטי sandbox לבדיקות.",
+    "paypalEvents": "אירועים:",
+    "gatewayEnabled": "להציע {gateway}",
+    "stripeSecret": "מפתח סודי",
+    "stripeSecretHint": "מתחיל ב־sk_live_ או sk_test_ (גם מפתח מוגבל rk_ עובד).",
+    "storedHint": "יש ערך שמור. השאירו ריק כדי לשמור עליו.",
+    "stripeWebhookSecret": "סוד חתימת Webhook ‏(whsec_…)",
+    "automaticTax": "חישוב מס אוטומטי (Stripe Tax)",
+    "automaticTaxHint": "דורש הגדרה של Stripe Tax בחשבון ה־Stripe שלכם.",
+    "saveGateway": "שמירת {gateway}",
+    "paypalMode": "סביבה",
+    "sandbox": "Sandbox (בדיקות)",
+    "live": "Live",
+    "paypalClientId": "Client ID",
+    "paypalSecret": "Secret",
+    "paypalWebhookId": "Webhook ID",
+    "adjustTitle": "תיקון יתרה",
+    "adjustHint": "מוסיף או מוריד קרדיטים עם סיבה. המשתמש רואה את התיקון בהיסטוריה; הוא נרשם ביומן הביקורת.",
+    "userEmail": "אימייל המשתמש",
+    "adjustAmount": "סכום ({currency}); שלילי כדי להוריד",
+    "adjustAmountHint": "למשל 5 או ‎-2.50",
+    "reason": "סיבה",
+    "adjust": "ביצוע התיקון",
+    "recentPayments": "תשלומים אחרונים",
+    "noPayments": "עדיין אין תשלומים.",
+    "date": "תאריך",
+    "user": "משתמש",
+    "gateway": "ספק",
+    "status": "מצב",
+    "amount": "סכום",
+    "deletedUser": "חשבון שנמחק",
+    "payment_PENDING": "התחיל",
+    "payment_SUCCEEDED": "שולם",
+    "payment_FAILED": "נכשל",
+    "refundedAmount": "הוחזר: {amount}",
+    "legalNote": "חשבוניות מס, מע״מ וכללי הגנת הצרכן תלויים במדינה שלכם — יש לבדוק אותם עם רואה חשבון או עורך דין.",
+    "errors": {
+      "forbidden": "אין לכם הרשאה לפעולה הזו.",
+      "invalid": "חלק מהערכים לא תקינים.",
+      "keysRequired": "הזינו את כל המפתחות לפני הפעלת הספק.",
+      "connectionFailed": "נשמר, אבל בדיקת החיבור נכשלה. בדקו את המפתחות ואת הגישה של השרת לאינטרנט.",
+      "notFound": "לא נמצא.",
+      "unknownUser": "אין חשבון עם האימייל הזה."
+    }
   }
 }

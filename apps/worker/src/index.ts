@@ -3,6 +3,7 @@ import { getDb } from '@rentagent/db';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { executeRun, type RuntimeDeps } from '@rentagent/agent-runtime';
+import { settleOrphanRuns, settleRun } from '@rentagent/billing';
 import { createFileWorker } from './files';
 import { indexAgent, purgeExpired, reindexAgents } from './maintenance';
 import { translateAgent, translateLocale } from './translate';
@@ -51,6 +52,7 @@ const workers: Worker[] = [
           log.info({ agents: await reindexAgents(runtimeDeps) }, 'agents reindexed');
           return;
         case 'retention':
+          await settleOrphanRuns(db);
           await purgeExpired(runtimeDeps);
           return;
         case 'translate-locale': {
@@ -74,7 +76,12 @@ const workers: Worker[] = [
   createMailWorker({ connection, db, keyring, log }),
   new Worker<RunJob>(
     QUEUE_NAMES.runs,
-    async (job) => void (await executeRun(runtimeDeps, job.data.runId)),
+    async (job) => {
+      const { status } = await executeRun(runtimeDeps, job.data.runId);
+      // Paid runs: charge the actual price and release the rest of the hold.
+      if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'CANCELED')
+        await settleRun(db, job.data.runId);
+    },
     {
       connection,
       concurrency: env.RUN_CONCURRENCY,

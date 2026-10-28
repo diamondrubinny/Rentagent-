@@ -5,6 +5,8 @@ import {
   followUpMessages,
   USER_MESSAGE_MAX_CHARS,
 } from '@rentagent/agent-runtime';
+import { randomUUID } from 'node:crypto';
+import { settleBeforeDelete } from '@rentagent/billing';
 import { enqueueRun, getServerEnv, rateLimit } from '@rentagent/core';
 import {
   isSupportedLocale,
@@ -15,6 +17,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { audit } from '@/lib/server/audit';
+import { InsufficientCreditsError, reserveCredits } from '@/lib/server/billing';
 import { runnableAgent } from '@/lib/server/catalog';
 import { ACTIVE_RUN_STATUSES, cancelRunAs, decideApprovalAs } from '@/lib/server/runs';
 import { db, redis } from '@/lib/server/runtime';
@@ -70,28 +73,42 @@ export async function startConversation(
   const quota = await checkRunQuota(user.id);
   if (quota) return quota;
 
-  const conversation = await db().conversation.create({
-    data: {
-      userId: user.id,
-      agentId: agent.id,
-      title: conversationTitle(parsed.data, agent.name),
-      runs: {
-        create: {
+  const runId = randomUUID();
+  let conversationId: string;
+  try {
+    conversationId = await db().$transaction(async (tx) => {
+      const conversation = await tx.conversation.create({
+        data: {
+          userId: user.id,
+          agentId: agent.id,
+          title: conversationTitle(parsed.data, agent.name),
+        },
+      });
+      const billing = await reserveCredits(tx, user.id, agent.config, runId);
+      await tx.run.create({
+        data: {
+          id: runId,
           agentId: agent.id,
           agentVersionId: agent.versionId,
+          conversationId: conversation.id,
           config: agent.config as object,
           userId: user.id,
           mode: 'LIVE',
           locale: localeOf(locale),
           input: parsed.data as object,
+          ...billing,
         },
-      },
-    },
-    include: { runs: { select: { id: true } } },
-  });
-  await enqueueRun(getServerEnv().REDIS_URL, conversation.runs[0]!.id);
+      });
+      return conversation.id;
+    });
+  } catch (error) {
+    if (error instanceof InsufficientCreditsError)
+      return { ok: false, error: 'insufficientCredits' };
+    throw error;
+  }
+  await enqueueRun(getServerEnv().REDIS_URL, runId);
   refresh();
-  return { ok: true, id: conversation.id };
+  return { ok: true, id: conversationId };
 }
 
 const messageSchema = z
@@ -132,41 +149,52 @@ export async function sendMessage(
   const quota = await checkRunQuota(user.id);
   if (quota) return quota;
 
-  const runId = await db().$transaction(async (tx) => {
-    // Serializes concurrent sends in the same conversation.
-    await tx.$queryRaw`SELECT id FROM conversations WHERE id = ${conversation.id}::uuid FOR UPDATE`;
-    const active = await tx.run.count({
-      where: { conversationId: conversation.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
+  let runId: string | null;
+  try {
+    runId = await db().$transaction(async (tx) => {
+      // Serializes concurrent sends in the same conversation.
+      await tx.$queryRaw`SELECT id FROM conversations WHERE id = ${conversation.id}::uuid FOR UPDATE`;
+      const active = await tx.run.count({
+        where: { conversationId: conversation.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
+      });
+      if (active > 0) return null;
+      const previous = await tx.run.findFirst({
+        where: { conversationId: conversation.id, status: 'SUCCEEDED' },
+        orderBy: { createdAt: 'desc' },
+        select: { messages: true },
+      });
+      const messages = followUpMessages(previous?.messages ?? [], parsed.data, {
+        historyTurns: agent.config.conversation.historyTurns,
+      });
+      const id = randomUUID();
+      const billing = await reserveCredits(tx, user.id, agent.config, id);
+      const run = await tx.run.create({
+        data: {
+          id,
+          ...billing,
+          agentId: agent.id,
+          agentVersionId: agent.versionId,
+          conversationId: conversation.id,
+          config: agent.config as object,
+          userId: user.id,
+          mode: 'LIVE',
+          locale: localeOf(locale),
+          input: {},
+          userMessage: parsed.data,
+          messages: messages as never,
+        },
+      });
+      await tx.conversation.update({
+        where: { id: conversation.id },
+        data: { updatedAt: new Date() },
+      });
+      return run.id;
     });
-    if (active > 0) return null;
-    const previous = await tx.run.findFirst({
-      where: { conversationId: conversation.id, status: 'SUCCEEDED' },
-      orderBy: { createdAt: 'desc' },
-      select: { messages: true },
-    });
-    const messages = followUpMessages(previous?.messages ?? [], parsed.data, {
-      historyTurns: agent.config.conversation.historyTurns,
-    });
-    const run = await tx.run.create({
-      data: {
-        agentId: agent.id,
-        agentVersionId: agent.versionId,
-        conversationId: conversation.id,
-        config: agent.config as object,
-        userId: user.id,
-        mode: 'LIVE',
-        locale: localeOf(locale),
-        input: {},
-        userMessage: parsed.data,
-        messages: messages as never,
-      },
-    });
-    await tx.conversation.update({
-      where: { id: conversation.id },
-      data: { updatedAt: new Date() },
-    });
-    return run.id;
-  });
+  } catch (error) {
+    if (error instanceof InsufficientCreditsError)
+      return { ok: false, error: 'insufficientCredits' };
+    throw error;
+  }
   if (!runId) return { ok: false, error: 'busy' };
   await enqueueRun(getServerEnv().REDIS_URL, runId);
   refresh();
@@ -258,6 +286,15 @@ export async function renameConversation(
 
 /** Stops active runs first so the worker does not write into deleted rows. */
 async function deleteConversations(userId: string, where: { id?: string }) {
+  // Credits held by these runs are settled before the rows disappear.
+  const held = await db().run.findMany({
+    where: { userId, conversation: { userId, ...where }, settledAt: null, holdMinor: { gt: 0n } },
+    select: { id: true },
+  });
+  await settleBeforeDelete(
+    db(),
+    held.map((run) => run.id),
+  );
   await db().run.updateMany({
     where: {
       userId,

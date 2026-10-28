@@ -5,7 +5,7 @@ import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 
 import { FormMessage } from '@/components/forms';
 import { Markdown } from '@/components/markdown';
 import { useAction } from '@/components/use-action';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import {
   cancelMyRun,
   decideMyApproval,
@@ -634,7 +634,17 @@ function Composer({
   return (
     <form ref={formRef} onSubmit={onSubmit} className="no-print space-y-2" noValidate>
       {outcome && !outcome.ok && !outcome.fieldErrors && (
-        <FormMessage tone="error">{t(`errors.${outcome.error}`)}</FormMessage>
+        <FormMessage tone="error">
+          {t(`errors.${outcome.error}`)}
+          {outcome.error === 'insufficientCredits' && (
+            <>
+              {' '}
+              <Link className="link" href="/account/billing">
+                {t('errors.topUpLink')}
+              </Link>
+            </>
+          )}
+        </FormMessage>
       )}
       <label htmlFor="chat-message" className="block font-semibold">
         {t('messageLabel')}

@@ -194,6 +194,8 @@ export async function executeRun(deps: RuntimeDeps, runId: string): Promise<Exec
     }
     let stepIdx = await db.runStep.count({ where: { runId } });
     let { costMicros, inputTokens, outputTokens } = run;
+    // Price so far (users' currency, micro-units); paid runs stop at their credit hold.
+    let priceMicros = run.priceMicros;
     let modelSteps = await db.runStep.count({ where: { runId, type: 'MODEL' } });
 
     const recordStep = async (step: {
@@ -345,6 +347,10 @@ export async function executeRun(deps: RuntimeDeps, runId: string): Promise<Exec
         await save();
         return finish('FAILED', { errorKind: 'budget' });
       }
+      if (run.priceLimitMicros !== null && priceMicros >= run.priceLimitMicros) {
+        await save();
+        return finish('FAILED', { errorKind: 'credit_limit' });
+      }
 
       // 3. Model step (streamed: partial text is published at most every 150 ms).
       let partial = '';
@@ -386,6 +392,7 @@ export async function executeRun(deps: RuntimeDeps, runId: string): Promise<Exec
       modelSteps++;
       messages.push(...result.responseMessages);
       costMicros += result.costMicros;
+      priceMicros += result.priceMicros;
       inputTokens += result.usage.inputTokens;
       outputTokens += result.usage.outputTokens;
       await db.run.update({

@@ -1,8 +1,9 @@
-import { BUILTIN_TOOLS } from '@rentagent/shared';
+import { BUILTIN_TOOLS, formatMoney } from '@rentagent/shared';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
+import { agentPriceLabel } from '@/lib/server/billing';
 import { runnableAgent } from '@/lib/server/catalog';
 import { db } from '@/lib/server/runtime';
 import { getCurrentUser, requireUser } from '@/lib/server/session';
@@ -66,6 +67,7 @@ export default async function AgentPage({ params }: PageProps) {
   const user = await getCurrentUser();
   const t = await getTranslations('Catalog');
   const items = await capabilities(agent.config.tools);
+  const price = await agentPriceLabel(agent.config);
 
   return (
     <div className="space-y-8">
@@ -105,6 +107,15 @@ export default async function AgentPage({ params }: PageProps) {
         )}
         <p className="mt-3 text-sm text-muted">{t('aiNotice')}</p>
       </section>
+
+      {price && (
+        <p className="rounded-lg border border-border p-4">
+          <strong>{t('priceTitle')}: </strong>
+          {price.mode === 'per_task'
+            ? t('pricePerTask', { amount: formatMoney(price.amountMinor, price.currency, locale) })
+            : t('priceUsage', { amount: formatMoney(price.amountMinor, price.currency, locale) })}
+        </p>
+      )}
 
       <section aria-labelledby="agent-start">
         <h2 id="agent-start" className="text-xl font-bold">

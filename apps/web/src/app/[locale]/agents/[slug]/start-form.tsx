@@ -6,7 +6,7 @@ import type { FormEvent } from 'react';
 import { FormMessage, SubmitButton } from '@/components/forms';
 import { TaskFields } from '@/components/task-fields';
 import { useAction } from '@/components/use-action';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { startConversation } from '../../chats/actions';
 
 export function StartForm({
@@ -36,7 +36,19 @@ export function StartForm({
 
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-5" noValidate>
-      {outcome && !outcome.ok && <FormMessage tone="error">{tErrors(outcome.error)}</FormMessage>}
+      {outcome && !outcome.ok && (
+        <FormMessage tone="error">
+          {tErrors(outcome.error)}
+          {outcome.error === 'insufficientCredits' && (
+            <>
+              {' '}
+              <Link className="link" href="/account/billing">
+                {tErrors('topUpLink')}
+              </Link>
+            </>
+          )}
+        </FormMessage>
+      )}
       {fields.length === 0 && <p>{t('noFields')}</p>}
       <TaskFields fields={fields} errors={fieldErrors} />
       <SubmitButton pending={pending} pendingLabel={t('starting')}>

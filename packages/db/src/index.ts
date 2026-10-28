@@ -17,5 +17,8 @@ export {
   ApprovalStatus,
   ScanStatus,
   KnowledgeStatus,
+  LedgerType,
+  PaymentGateway,
+  PaymentStatus,
 } from './generated/prisma/client';
 export type { PrismaClient } from './generated/prisma/client';

@@ -129,6 +129,7 @@ model User {
   runs          Run[]
   files         File[]
   conversations Conversation[]
+  wallet        Wallet?
 
   @@index([role])
   @@index([createdAt])
@@ -497,6 +498,13 @@ model Run {
   costMicros     BigInt    @default(0) @map("cost_micros")
   priceMicros    BigInt    @default(0) @map("price_micros")
   cancelRequested Boolean  @default(false) @map("cancel_requested")
+  /// Credits reserved for this run (minor units of the wallet currency); 0 = not billed.
+  holdMinor      BigInt    @default(0) @map("hold_minor")
+  /// The run stops when its price reaches this many micro-units (usage pricing).
+  priceLimitMicros BigInt? @map("price_limit_micros")
+  chargedMinor   BigInt    @default(0) @map("charged_minor")
+  /// Set once the hold was captured/released (idempotent settlement).
+  settledAt      DateTime? @map("settled_at") @db.Timestamptz(3)
   startedAt      DateTime? @map("started_at") @db.Timestamptz(3)
   finishedAt     DateTime? @map("finished_at") @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -509,6 +517,7 @@ model Run {
   approvals    Approval[]
 
   @@index([conversationId, createdAt])
+  @@index([settledAt, status])
   @@index([agentId, createdAt])
   @@index([userId, createdAt])
   @@index([status])
@@ -648,4 +657,88 @@ model Chunk {
 
   @@index([agentId, embeddingModelId])
   @@map("chunks")
+}
+
+enum LedgerType {
+  /// Free credits from the operator (sign-up bonus).
+  GRANT
+  TOPUP
+  HOLD
+  CAPTURE
+  RELEASE
+  REFUND
+  /// Manual correction by staff, with a reason.
+  ADJUST
+}
+
+enum PaymentGateway {
+  STRIPE
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+/// Credit balance of one user, in the installation's base currency (minor units).
+model Wallet {
+  userId       String   @id @map("user_id") @db.VarChar(64)
+  currency     String   @db.Char(3)
+  /// Spendable credits; can go below zero after a refund.
+  balanceMinor BigInt   @default(0) @map("balance_minor")
+  /// Reserved for runs in progress.
+  heldMinor    BigInt   @default(0) @map("held_minor")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+/// Append-only record of every credit movement. Kept for accounting when an account is deleted.
+model LedgerEntry {
+  id             BigInt     @id @default(autoincrement())
+  userId         String?    @map("user_id") @db.VarChar(64)
+  type           LedgerType
+  /// Change of the spendable balance (signed).
+  availableDelta BigInt     @map("available_delta")
+  /// Change of the reserved amount (signed).
+  heldDelta      BigInt     @default(0) @map("held_delta")
+  currency       String     @db.Char(3)
+  runId          String?    @map("run_id") @db.Uuid
+  paymentId      String?    @map("payment_id") @db.Uuid
+  note           String?    @db.VarChar(300)
+  actorId        String?    @map("actor_id") @db.VarChar(64)
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, createdAt])
+  @@index([runId])
+  @@map("ledger_entries")
+}
+
+/// A top-up through a payment gateway. Card data never touches this system.
+model Payment {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String?        @map("user_id") @db.VarChar(64)
+  gateway       PaymentGateway
+  /// Checkout session id (Stripe) or order id (PayPal).
+  gatewayRef    String         @map("gateway_ref") @db.VarChar(255)
+  /// Payment intent (Stripe) or capture id (PayPal), used to match refunds.
+  chargeRef     String?        @map("charge_ref") @db.VarChar(255)
+  amountMinor   BigInt         @map("amount_minor")
+  currency      String         @db.Char(3)
+  taxMinor      BigInt         @default(0) @map("tax_minor")
+  refundedMinor BigInt         @default(0) @map("refunded_minor")
+  status        PaymentStatus  @default(PENDING)
+  receiptUrl    String?        @map("receipt_url") @db.VarChar(1000)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([gateway, gatewayRef])
+  @@index([gateway, chargeRef])
+  @@index([userId, createdAt])
+  @@map("payments")
 }

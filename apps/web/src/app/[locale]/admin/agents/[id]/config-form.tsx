@@ -58,6 +58,9 @@ export function ConfigForm({ agentId, initial, targets, customTools, locales }: 
   );
   const [domains, setDomains] = useState(initial.fetchAllowedDomains.join('\n'));
   const [outputFormat, setOutputFormat] = useState(initial.outputFormat);
+  const [pricingMode, setPricingMode] = useState(initial.pricing.mode);
+  const [perTask, setPerTask] = useState(initial.pricing.perTask ?? '');
+  const [maxPerTask, setMaxPerTask] = useState(initial.pricing.maxPerTask ?? '');
   const [followUps, setFollowUps] = useState(initial.conversation.followUps);
   const [historyTurns, setHistoryTurns] = useState(String(initial.conversation.historyTurns));
   const [announcement, setAnnouncement] = useState('');
@@ -122,6 +125,11 @@ export function ConfigForm({ agentId, initial, targets, customTools, locales }: 
         .filter(Boolean),
       outputFormat,
       temperature: temperature.trim() === '' ? null : number(temperature),
+      pricing: {
+        mode: pricingMode,
+        perTask: perTask.trim() || null,
+        maxPerTask: maxPerTask.trim() || null,
+      },
       conversation: { followUps, historyTurns: number(historyTurns) },
     };
   }
@@ -470,6 +478,56 @@ export function ConfigForm({ agentId, initial, targets, customTools, locales }: 
             </label>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="mb-2 text-lg font-bold">{t('pricing')}</legend>
+        <p className="text-sm text-muted">{t('pricingHint')}</p>
+        <div className="flex flex-wrap gap-6">
+          {(['usage', 'per_task', 'free'] as const).map((mode) => (
+            <label key={mode} className="flex items-center gap-3">
+              <input
+                type="radio"
+                name={`${id}-pricing`}
+                className="size-5"
+                checked={pricingMode === mode}
+                onChange={() => setPricingMode(mode)}
+              />
+              {t(`pricing_${mode}`)}
+            </label>
+          ))}
+        </div>
+        {pricingMode === 'usage' && (
+          <label className="block max-w-xs">
+            <span className="mb-1 block font-semibold">{t('maxPerTask')}</span>
+            <span className="mb-1 block text-sm text-muted">{t('maxPerTaskHint')}</span>
+            <input
+              value={maxPerTask}
+              onChange={(event) => setMaxPerTask(event.target.value)}
+              inputMode="decimal"
+              dir="ltr"
+              className="field-input"
+            />
+          </label>
+        )}
+        {pricingMode === 'per_task' && (
+          <label className="block max-w-xs">
+            <span className="mb-1 block font-semibold">{t('perTask')}</span>
+            <span className="mb-1 block text-sm text-muted">{t('perTaskHint')}</span>
+            <input
+              value={perTask}
+              onChange={(event) => setPerTask(event.target.value)}
+              inputMode="decimal"
+              dir="ltr"
+              className="field-input"
+            />
+          </label>
+        )}
+        {errorsFor('pricing').map((message) => (
+          <p key={message} className="text-sm font-semibold text-danger">
+            {message}
+          </p>
+        ))}
       </fieldset>
 
       <fieldset className="space-y-3">

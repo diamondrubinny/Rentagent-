@@ -1,0 +1,23 @@
+{
+  "name": "@rentagent/billing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rentagent/core": "workspace:*",
+    "@rentagent/db": "workspace:*",
+    "@rentagent/shared": "workspace:*",
+    "stripe": "23.0.0"
+  },
+  "devDependencies": {
+    "vitest": "4.1.12"
+  }
+}

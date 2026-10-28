@@ -24,6 +24,7 @@ COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 COPY packages/agent-runtime/package.json packages/agent-runtime/
 COPY packages/ai-gateway/package.json packages/ai-gateway/
+COPY packages/billing/package.json packages/billing/
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/mail/package.json packages/mail/
