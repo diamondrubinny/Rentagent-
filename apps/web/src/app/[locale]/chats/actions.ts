@@ -7,7 +7,7 @@ import {
 } from '@rentagent/agent-runtime';
 import { enqueueRun, getServerEnv, rateLimit } from '@rentagent/core';
 import {
-  isBuiltinLocale,
+  isSupportedLocale,
   normalizeSingleLine,
   normalizeText,
   runInputSchema,
@@ -52,7 +52,7 @@ async function checkRunQuota(userId: string): Promise<ChatResult | null> {
   return null;
 }
 
-const localeOf = (value: string) => (isBuiltinLocale(value) ? value : 'en');
+const localeOf = (value: string) => (isSupportedLocale(value) ? value : 'en');
 
 /** Starts a conversation with a published agent from its task form. */
 export async function startConversation(

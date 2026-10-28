@@ -10,7 +10,7 @@ import {
   agentMetaSchema,
   agentSearchText,
   defaultAgentConfig,
-  isBuiltinLocale,
+  isSupportedLocale,
   runInputSchema,
 } from '@rentagent/shared';
 import { revalidatePath } from 'next/cache';
@@ -189,6 +189,33 @@ export async function updateAgentMeta(agentId: string, input: unknown): Promise<
   await audit('agents.meta_updated', { actorId: actor.id, target: `agent:${agentId}` });
   refresh();
   return { ok: true };
+}
+
+/** Machine-translates name and description into enabled languages that have no human translation. */
+export async function translateAgentNow(agentId: string): Promise<FormResult> {
+  const actor = await authorizeAction('agents.manage');
+  if (!actor) return forbidden;
+  if (!uuid.safeParse(agentId).success) return { ok: false, error: 'invalid' };
+  const agent = await db().agent.findUnique({ where: { id: agentId } });
+  if (!agent) return { ok: false, error: 'notFound' };
+  const localizations = (agent.localizations ?? {}) as Record<
+    string,
+    { name?: string; auto?: boolean }
+  >;
+  const locales = (await db().locale.findMany({ where: { enabled: true }, select: { code: true } }))
+    .map((row) => row.code)
+    .filter((code) => code !== 'en' && (!localizations[code]?.name || localizations[code]?.auto));
+  if (locales.length > 0)
+    await enqueueSystemJob(getServerEnv().REDIS_URL, {
+      name: 'translate-agent',
+      data: { agentId, locales },
+    });
+  await audit('agents.auto_translate_started', {
+    actorId: actor.id,
+    target: `agent:${agentId}`,
+    meta: { locales },
+  });
+  return { ok: true, values: { queued: locales.length } };
 }
 
 /** Featured agents are listed first in the catalog and on the home page. */
@@ -380,7 +407,7 @@ export async function startPreviewRun(
       config: config as object,
       userId: actor.id,
       mode: 'PREVIEW',
-      locale: isBuiltinLocale(options.locale) ? options.locale : 'en',
+      locale: isSupportedLocale(options.locale) ? options.locale : 'en',
       input: parsedInput.data as object,
     },
   });

@@ -1,12 +1,21 @@
 import { getServerEnv } from '@rentagent/core';
 import { getSettings } from '@rentagent/db';
+import { BUILTIN_LOCALES } from '@rentagent/shared';
 import type { MetadataRoute } from 'next';
-import { routing } from '@/i18n/routing';
+import { getEnabledLocales } from '@/lib/server/locales';
 import { db, logger } from '@/lib/server/runtime';
 
 export const dynamic = 'force-dynamic';
 
 const PUBLIC_PATHS = ['', '/privacy', '/terms', '/cookies', '/accessibility'];
+
+async function enabledLocaleCodes(): Promise<string[]> {
+  try {
+    return (await getEnabledLocales()).map((locale) => locale.code);
+  } catch {
+    return [...BUILTIN_LOCALES];
+  }
+}
 
 /** Agent pages are listed only when the operator made the catalog public. */
 async function agentPaths(): Promise<string[]> {
@@ -34,13 +43,12 @@ async function agentPaths(): Promise<string[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appUrl = getServerEnv().APP_URL;
   const paths = [...PUBLIC_PATHS, ...(await agentPaths())];
+  const locales = await enabledLocaleCodes();
   return paths.flatMap((path) =>
-    routing.locales.map((locale) => ({
+    locales.map((locale) => ({
       url: `${appUrl}/${locale}${path}`,
       alternates: {
-        languages: Object.fromEntries(
-          routing.locales.map((alt) => [alt, `${appUrl}/${alt}${path}`]),
-        ),
+        languages: Object.fromEntries(locales.map((alt) => [alt, `${appUrl}/${alt}${path}`])),
       },
     })),
   );

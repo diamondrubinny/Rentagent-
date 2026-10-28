@@ -6,7 +6,7 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 
 - Product plan and roadmap: [`PLAN.md`](PLAN.md) (Hebrew)
 - Server requirements for customers: [`deploy/REQUIREMENTS.md`](deploy/REQUIREMENTS.md)
-- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md)
+- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md), [`docs/phase-5-5.md`](docs/phase-5-5.md)
 
 ## Status
 
@@ -24,7 +24,10 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 - Phase 5 (end users): public or private agent catalog with multilingual and semantic search, chat
   with streamed answers and follow-ups, user approvals, feedback, downloads, chat history, data
   export, history and account deletion, automatic retention.
-- Next: languages admin (5.5), customization and billing (6), licensing and compliance (7).
+- Phase 5.5 (languages): enable any of 53 UI languages, machine translation through the operator's
+  AI with ICU format checks and review status, string editor with overrides, default language,
+  agent name/description translation.
+- Next: customization and billing (6), licensing and compliance (7).
 
 ## Repository layout
 

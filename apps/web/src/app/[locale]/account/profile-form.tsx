@@ -1,6 +1,6 @@
 'use client';
 
-import { isBuiltinLocale, nameField } from '@rentagent/shared';
+import { isSupportedLocale, nameField } from '@rentagent/shared';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms';
@@ -35,7 +35,7 @@ export function ProfileForm({ name, email, locale, locales }: ProfileFormProps) 
     setPending(true);
     const { error } = await authClient.updateUser({
       name: parsedName.data,
-      locale: isBuiltinLocale(nextLocale) ? nextLocale : undefined,
+      locale: isSupportedLocale(nextLocale) ? nextLocale : undefined,
     });
     setPending(false);
     setMessage(

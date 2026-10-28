@@ -5,6 +5,7 @@ import { Redis } from 'ioredis';
 import { executeRun, type RuntimeDeps } from '@rentagent/agent-runtime';
 import { createFileWorker } from './files';
 import { indexAgent, purgeExpired, reindexAgents } from './maintenance';
+import { translateAgent, translateLocale } from './translate';
 import { createMailWorker } from './mail';
 
 const HEARTBEAT_KEY = 'worker:heartbeat';
@@ -52,11 +53,23 @@ const workers: Worker[] = [
         case 'retention':
           await purgeExpired(runtimeDeps);
           return;
+        case 'translate-locale': {
+          const data = job.data as { locale: string; entries: Record<string, string> };
+          await translateLocale(runtimeDeps, data.locale, data.entries);
+          return;
+        }
+        case 'translate-agent': {
+          const data = job.data as { agentId: string; locales: string[] };
+          if (await translateAgent(runtimeDeps, data.agentId, data.locales))
+            await indexAgent(runtimeDeps, data.agentId);
+          return;
+        }
         default:
           throw new Error(`Unknown system job: ${job.name}`);
       }
     },
-    { connection, concurrency: 1 },
+    // Long jobs (translation, re-indexing) must never starve the heartbeat.
+    { connection, concurrency: 4 },
   ),
   createMailWorker({ connection, db, keyring, log }),
   new Worker<RunJob>(

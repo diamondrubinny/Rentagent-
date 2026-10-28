@@ -1,9 +1,8 @@
-import { getLocaleNativeName, getTextDirection } from '@rentagent/shared';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { LanguageLinks } from '@/components/language-links';
 import { ConsentManager } from '@/components/consent/consent-manager';
 import { Link } from '@/i18n/navigation';
-import { routing } from '@/i18n/routing';
+import { getEnabledLocales } from '@/lib/server/locales';
 
 interface SiteFooterProps {
   siteName: string;
@@ -13,10 +12,10 @@ interface SiteFooterProps {
 export async function SiteFooter({ siteName, optionalTrackersEnabled }: SiteFooterProps) {
   const t = await getTranslations('Footer');
   const currentLocale = await getLocale();
-  const languages = routing.locales.map((code) => ({
+  const languages = (await getEnabledLocales()).map(({ code, nativeName, direction }) => ({
     code,
-    name: getLocaleNativeName(code),
-    dir: getTextDirection(code),
+    name: nativeName,
+    dir: direction,
   }));
 
   return (

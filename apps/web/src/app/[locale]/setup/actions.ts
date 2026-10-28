@@ -11,6 +11,7 @@ import {
 import { hashPassword } from 'better-auth/crypto';
 import { audit } from '@/lib/server/audit';
 import { resetAuth } from '@/lib/server/auth';
+import { publishLocaleChange } from '@/lib/server/locales';
 import { verifySmtp } from '@rentagent/mail';
 import { clientIpHash, db, encryptionKeyring, logger, redis } from '@/lib/server/runtime';
 import { getSiteConfig } from '@/lib/server/site';
@@ -167,6 +168,7 @@ export async function completeSetup(
   }
 
   resetAuth();
+  await publishLocaleChange();
   await audit('setup.completed', {
     actorId: ownerId,
     meta: {

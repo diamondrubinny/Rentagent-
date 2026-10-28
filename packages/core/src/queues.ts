@@ -15,7 +15,11 @@ export interface RunJob {
 /** Maintenance jobs handled by the worker's system queue. */
 export type SystemJob =
   | { name: 'index-agent'; data: { agentId: string } }
-  | { name: 'reindex-agents'; data: Record<string, never> };
+  | { name: 'reindex-agents'; data: Record<string, never> }
+  /** Machine-translates UI strings (key -> English source) into a locale. */
+  | { name: 'translate-locale'; data: { locale: string; entries: Record<string, string> } }
+  /** Fills missing agent name/description translations for the given locales. */
+  | { name: 'translate-agent'; data: { agentId: string; locales: string[] } };
 
 export type FileJob = { kind: 'scan'; fileId: string } | { kind: 'ingest'; sourceId: string };
 
@@ -110,4 +114,22 @@ export async function enqueueSystemJob(redisUrl: string, job: SystemJob): Promis
       ? `index-agent-${job.data.agentId}-${Math.floor(Date.now() / 5000)}`
       : undefined;
   await globalForQueues.rentagentSystemQueue.add(job.name, job.data, { jobId });
+}
+
+/** Redis keys shared by the web app (proxy, message cache) and the worker. */
+export const I18N_KEYS = {
+  /** Incremented whenever locales or translations change; caches compare against it. */
+  version: 'i18n:version',
+  /** {"enabled": [...codes], "default": "code"} for locale negotiation in the proxy. */
+  routing: 'i18n:routing',
+  /** Progress of an automatic translation job: i18n:job:<locale>. */
+  job: (locale: string) => `i18n:job:${locale}`,
+} as const;
+
+export interface TranslationJobProgress {
+  status: 'running' | 'done' | 'failed';
+  total: number;
+  translated: number;
+  rejected: number;
+  updatedAt: string;
 }

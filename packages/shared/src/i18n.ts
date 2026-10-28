@@ -7,6 +7,69 @@ export type BuiltinLocale = (typeof BUILTIN_LOCALES)[number];
 
 export const FALLBACK_LOCALE: BuiltinLocale = 'en';
 
+/**
+ * Every UI language an operator can enable (routes exist for these codes only;
+ * disabled ones return 404). Built-in locales ship reviewed translations; the
+ * others are translated in the admin (automatically, then reviewed).
+ */
+export const SUPPORTED_LOCALES = [
+  ...BUILTIN_LOCALES,
+  'am',
+  'az',
+  'bg',
+  'bn',
+  'ca',
+  'cs',
+  'da',
+  'de',
+  'el',
+  'es',
+  'et',
+  'fa',
+  'fi',
+  'fil',
+  'fr',
+  'hi',
+  'hr',
+  'hu',
+  'hy',
+  'id',
+  'it',
+  'ja',
+  'ka',
+  'kk',
+  'ko',
+  'lt',
+  'lv',
+  'ms',
+  'nb',
+  'nl',
+  'pl',
+  'pt',
+  'pt-BR',
+  'ro',
+  'sk',
+  'sl',
+  'sr',
+  'sv',
+  'sw',
+  'ta',
+  'th',
+  'tr',
+  'uk',
+  'ur',
+  'uz',
+  'vi',
+  'yi',
+  'zh',
+  'zh-TW',
+] as const;
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+
+export function isSupportedLocale(value: unknown): value is SupportedLocale {
+  return typeof value === 'string' && (SUPPORTED_LOCALES as readonly string[]).includes(value);
+}
+
 /** Primary language subtags written right-to-left. */
 const RTL_LANGUAGES = new Set([
   'ar', // Arabic

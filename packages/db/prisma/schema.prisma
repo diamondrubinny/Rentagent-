@@ -56,11 +56,13 @@ model Translation {
   key       String            @db.VarChar(200)
   value     String
   status    TranslationStatus @default(REVIEWED)
+  updatedBy String?           @map("updated_by") @db.VarChar(64)
   updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   localeRef Locale @relation(fields: [locale], references: [code], onDelete: Cascade)
 
   @@id([locale, key])
+  @@index([locale, status])
   @@map("translations")
 }
 

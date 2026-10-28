@@ -8,7 +8,7 @@ import {
   sha256Hex,
 } from '@rentagent/core';
 import { getSettings } from '@rentagent/db';
-import { FALLBACK_LOCALE, isBuiltinLocale } from '@rentagent/shared';
+import { FALLBACK_LOCALE, isSupportedLocale } from '@rentagent/shared';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { createAuthMiddleware, isAPIError } from 'better-auth/api';
@@ -52,7 +52,7 @@ function authSecret(): string {
 /** Users carry an optional `locale` additional field that Better Auth's base type does not declare. */
 function userLocale(user: object, fallback: string): string {
   const locale = 'locale' in user ? user.locale : undefined;
-  return typeof locale === 'string' && isBuiltinLocale(locale) ? locale : fallback;
+  return isSupportedLocale(locale) ? locale : fallback;
 }
 
 function sendMail(job: MailJob): void {
@@ -190,6 +190,15 @@ function createAuth(config: AuthRuntimeConfig) {
             data: { ...user, locale: userLocale(user, config.defaultLocale) },
           }),
         },
+        update: {
+          // Profile updates go through the same check (the field is user-writable).
+          before: async (user) => {
+            if (!('locale' in user) || user.locale === undefined) return { data: user };
+            return {
+              data: { ...user, locale: isSupportedLocale(user.locale) ? user.locale : null },
+            };
+          },
+        },
       },
       session: {
         create: {
@@ -294,7 +303,7 @@ export function getAuth(): Promise<Auth> {
     const defaultLocale = settings['site.defaultLocale'] ?? FALLBACK_LOCALE;
     return createAuth({
       siteName: settings['site.name'] ?? 'RentAgent',
-      defaultLocale: isBuiltinLocale(defaultLocale) ? defaultLocale : FALLBACK_LOCALE,
+      defaultLocale: isSupportedLocale(defaultLocale) ? defaultLocale : FALLBACK_LOCALE,
       // Open registration requires working email, because every account must verify its address.
       registrationOpen:
         settings['auth.registrationMode'] === 'open' && Boolean(settings['mail.smtp']?.enabled),

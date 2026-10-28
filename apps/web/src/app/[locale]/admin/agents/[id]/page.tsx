@@ -1,7 +1,7 @@
 import {
   agentConfigSchema,
   AGENT_CATEGORIES,
-  BUILTIN_LOCALES,
+  SUPPORTED_LOCALES,
   defaultAgentConfig,
   getLocaleNativeName,
 } from '@rentagent/shared';
@@ -10,6 +10,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { Link } from '@/i18n/navigation';
+import { getEnabledLocales } from '@/lib/server/locales';
 import { db } from '@/lib/server/runtime';
 import { requirePermission } from '@/lib/server/session';
 import { ConfigForm } from './config-form';
@@ -113,10 +114,9 @@ export default async function AgentPage({ params }: PageProps) {
         <MetaForm
           agentId={agent.id}
           categories={[...AGENT_CATEGORIES]}
-          locales={BUILTIN_LOCALES.filter((code) => code !== 'en').map((code) => ({
-            code,
-            name: getLocaleNativeName(code),
-          }))}
+          locales={(await getEnabledLocales())
+            .filter(({ code }) => code !== 'en')
+            .map(({ code, nativeName }) => ({ code, name: nativeName }))}
           values={{
             slug: agent.slug,
             name: agent.name,
@@ -162,7 +162,7 @@ export default async function AgentPage({ params }: PageProps) {
               sideEffect: true,
             })),
           ]}
-          locales={BUILTIN_LOCALES.map((code) => ({ code, name: getLocaleNativeName(code) }))}
+          locales={SUPPORTED_LOCALES.map((code) => ({ code, name: getLocaleNativeName(code) }))}
         />
       </section>
 

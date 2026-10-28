@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { icuShape, isCompatibleTranslation } from '@rentagent/shared';
 import { describe, expect, it } from 'vitest';
 
 type Tree = { [key: string]: string | Tree };
@@ -34,5 +35,17 @@ describe.each(locales)('%s', (file) => {
     for (const [key, value] of reference) {
       expect(placeholders(messages.get(key) ?? ''), key).toEqual(placeholders(value));
     }
+  });
+
+  it('is valid ICU with the same variables and tags as en.json', () => {
+    for (const [key, value] of reference) {
+      expect(isCompatibleTranslation(value, messages.get(key) ?? ''), key).toBe(true);
+    }
+  });
+});
+
+describe('en.json', () => {
+  it('parses as ICU', () => {
+    for (const [key, value] of reference) expect(icuShape(value), key).not.toBeNull();
   });
 });

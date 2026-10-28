@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { FormEvent } from 'react';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms';
 import { useAction } from '@/components/use-action';
-import { updateAgentMeta } from '../actions';
+import { translateAgentNow, updateAgentMeta } from '../actions';
 
 interface MetaFormProps {
   agentId: string;
@@ -15,7 +15,7 @@ interface MetaFormProps {
     name: string;
     category: string;
     description: string;
-    localizations: Record<string, { name: string; description: string }>;
+    localizations: Record<string, { name: string; description: string; auto?: boolean }>;
   };
 }
 
@@ -33,13 +33,17 @@ export function MetaForm({ agentId, categories, locales, values }: MetaFormProps
     const get = (name: string) => String(form.get(name) ?? '');
     const localizations = Object.fromEntries(
       locales
-        .map(
-          ({ code }) =>
-            [
-              code,
-              { name: get(`name_${code}`).trim(), description: get(`description_${code}`).trim() },
-            ] as const,
-        )
+        .map(({ code }) => {
+          const name = get(`name_${code}`).trim();
+          const description = get(`description_${code}`).trim();
+          const previous = values.localizations[code];
+          // Unchanged machine translations stay flagged for review; any edit counts as reviewed.
+          const auto =
+            previous?.auto === true &&
+            previous.name === name &&
+            previous.description === description;
+          return [code, auto ? { name, description, auto } : { name, description }] as const;
+        })
         .filter(([, value]) => value.name || value.description),
     );
     run(() =>
@@ -111,13 +115,22 @@ export function MetaForm({ agentId, categories, locales, values }: MetaFormProps
         <summary className="cursor-pointer p-3 font-semibold">{t('translations')}</summary>
         <div className="space-y-4 p-4">
           <p className="text-sm text-muted">{t('translationsHint')}</p>
+          <TranslateAgentButton agentId={agentId} />
           {locales.map(({ code, name }) => (
-            <fieldset key={code} className="space-y-3" lang={code}>
-              <legend className="font-semibold">{name}</legend>
+            <fieldset key={code} className="space-y-3">
+              <legend className="font-semibold">
+                <span lang={code}>{name}</span>
+                {values.localizations[code]?.auto && (
+                  <span className="ms-2 text-sm font-normal text-danger">
+                    {t('autoTranslated')}
+                  </span>
+                )}
+              </legend>
               <TextField
                 name={`name_${code}`}
                 label={t('localName')}
                 defaultValue={values.localizations[code]?.name ?? ''}
+                lang={code}
                 dir="auto"
               />
               <div>
@@ -130,6 +143,7 @@ export function MetaForm({ agentId, categories, locales, values }: MetaFormProps
                   rows={2}
                   maxLength={2000}
                   defaultValue={values.localizations[code]?.description ?? ''}
+                  lang={code}
                   dir="auto"
                   className="field-input py-2"
                 />
@@ -142,5 +156,31 @@ export function MetaForm({ agentId, categories, locales, values }: MetaFormProps
         {t('save')}
       </SubmitButton>
     </form>
+  );
+}
+
+function TranslateAgentButton({ agentId }: { agentId: string }) {
+  const t = useTranslations('AdminAgents.meta');
+  const tErrors = useTranslations('AdminAgents.errors');
+  const { pending, outcome, run } = useAction();
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        className="btn btn-secondary"
+        disabled={pending}
+        onClick={() => run(() => translateAgentNow(agentId))}
+      >
+        {t('autoTranslate')}
+      </button>
+      {outcome?.ok && (
+        <p role="status" className="text-sm">
+          {outcome.values?.queued
+            ? t('autoTranslateQueued', { count: outcome.values.queued })
+            : t('autoTranslateNothing')}
+        </p>
+      )}
+      {outcome && !outcome.ok && <FormMessage tone="error">{tErrors(outcome.error)}</FormMessage>}
+    </div>
   );
 }

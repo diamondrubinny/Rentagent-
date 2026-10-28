@@ -1,6 +1,6 @@
-import { BUILTIN_LOCALES, getLocaleNativeName } from '@rentagent/shared';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getEnabledLocales } from '@/lib/server/locales';
 import { requireUser } from '@/lib/server/session';
 import { ProfileForm } from './profile-form';
 
@@ -28,7 +28,10 @@ export default async function ProfilePage({ params }: PageProps) {
         name={user.name}
         email={user.email}
         locale={user.locale ?? locale}
-        locales={BUILTIN_LOCALES.map((code) => ({ code, name: getLocaleNativeName(code) }))}
+        locales={(await getEnabledLocales()).map(({ code, nativeName }) => ({
+          code,
+          name: nativeName,
+        }))}
       />
     </section>
   );

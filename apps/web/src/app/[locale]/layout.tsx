@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { routing } from '@/i18n/routing';
+import { ensureRoutingPublished, getEnabledLocales } from '@/lib/server/locales';
 import { getSiteConfig } from '@/lib/server/site';
 import '../globals.css';
 
@@ -34,7 +35,9 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
     applicationName: site.name,
     openGraph: { siteName: site.name, locale, type: 'website' },
     alternates: {
-      languages: Object.fromEntries(routing.locales.map((code) => [code, `/${code}`])),
+      languages: Object.fromEntries(
+        (await getEnabledLocales()).map(({ code }) => [code, `/${code}`]),
+      ),
     },
   };
 }
@@ -42,7 +45,10 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
+  // Routes exist for every supported locale; only enabled ones are served.
+  if (!(await getEnabledLocales()).some((enabled) => enabled.code === locale)) notFound();
   setRequestLocale(locale);
+  await ensureRoutingPublished();
 
   const t = await getTranslations('Common');
   const site = await getSiteConfig();

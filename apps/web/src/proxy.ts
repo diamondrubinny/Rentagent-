@@ -1,17 +1,29 @@
-import { isBuiltinLocale } from '@rentagent/shared';
 import createMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
+import { getLocaleRouting, type LocaleRouting } from './lib/locale-routing';
 import { buildContentSecurityPolicy, generateNonce } from './lib/security-headers';
 
-const configuredDefault = process.env.DEFAULT_LOCALE ?? '';
+/** One next-intl handler per enabled-locales configuration (it rarely changes). */
+const handlers = new Map<string, ReturnType<typeof createMiddleware>>();
 
-const handleI18nRouting = createMiddleware({
-  ...routing,
-  defaultLocale: isBuiltinLocale(configuredDefault) ? configuredDefault : routing.defaultLocale,
-});
+function handlerFor(config: LocaleRouting) {
+  const key = `${config.defaultLocale}|${config.enabled.join(',')}`;
+  let handler = handlers.get(key);
+  if (!handler) {
+    // Negotiation (Accept-Language, cookie) only ever picks an enabled locale.
+    handler = createMiddleware({
+      ...routing,
+      locales: config.enabled,
+      defaultLocale: config.defaultLocale,
+    });
+    if (handlers.size > 20) handlers.clear();
+    handlers.set(key, handler);
+  }
+  return handler;
+}
 
-export default function proxy(request: NextRequest): NextResponse {
+export default async function proxy(request: NextRequest): Promise<NextResponse> {
   const nonce = generateNonce();
   const csp = buildContentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
 
@@ -19,7 +31,7 @@ export default function proxy(request: NextRequest): NextResponse {
   request.headers.set('x-nonce', nonce);
   request.headers.set('Content-Security-Policy', csp);
 
-  const response = handleI18nRouting(request);
+  const response = handlerFor(await getLocaleRouting())(request);
   response.headers.set('Content-Security-Policy', csp);
   return response;
 }

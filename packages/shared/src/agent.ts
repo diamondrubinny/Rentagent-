@@ -155,7 +155,12 @@ export const agentMetaSchema = z.object({
   localizations: z
     .record(
       z.string().refine((key) => canonicalizeLocale(key) !== null),
-      z.object({ name: z.string().trim().max(120), description: z.string().trim().max(2000) }),
+      z.object({
+        name: z.string().trim().max(120),
+        description: z.string().trim().max(2000),
+        /** Machine-translated and not yet reviewed by a person. */
+        auto: z.boolean().optional(),
+      }),
     )
     .default({}),
 });
