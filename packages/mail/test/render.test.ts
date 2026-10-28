@@ -11,14 +11,29 @@ const vars = {
 };
 
 describe('renderMail', () => {
-  it.each(MAIL_TEMPLATES)('renders %s in every locale', (template) => {
-    for (const locale of ['en', 'he', 'ar', 'ru']) {
-      const mail = renderMail(template, locale, vars);
-      expect(mail.subject).toContain('Agents');
-      expect(mail.html).toContain('https://agents.example.com/verify?token=abc');
-      expect(mail.text).toContain('https://agents.example.com/verify?token=abc');
-      expect(mail.html).not.toMatch(/\{\w+\}/);
-    }
+  it.each(MAIL_TEMPLATES.filter((template) => template !== 'agentMessage'))(
+    'renders %s in every locale',
+    (template) => {
+      for (const locale of ['en', 'he', 'ar', 'ru']) {
+        const mail = renderMail(template, locale, vars);
+        expect(mail.subject).toContain('Agents');
+        expect(mail.html).toContain('https://agents.example.com/verify?token=abc');
+        expect(mail.text).toContain('https://agents.example.com/verify?token=abc');
+        expect(mail.html).not.toMatch(/\{\w+\}/);
+      }
+    },
+  );
+
+  it('renders agent messages without a link, escaping and keeping line breaks', () => {
+    const mail = renderMail('agentMessage', 'he', {
+      siteName: 'Agents',
+      subject: 'Quote',
+      body: 'Line 1\n<b>Line 2</b>',
+    });
+    expect(mail.subject).toBe('Quote');
+    expect(mail.html).toContain('Line 1<br>&lt;b&gt;Line 2&lt;/b&gt;');
+    expect(mail.html).not.toContain('<a href');
+    expect(mail.text).toContain('סוכן AI');
   });
 
   it('sets direction for RTL locales', () => {

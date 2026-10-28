@@ -1,6 +1,7 @@
 {
   "layout": {
-    "footer": "This email was sent by {siteName}. If the button does not work, copy this link into your browser:"
+    "footer": "This email was sent by {siteName}. If the button does not work, copy this link into your browser:",
+    "footerPlain": "This email was sent by {siteName}."
   },
   "verifyEmail": {
     "subject": "Confirm your email for {siteName}",
@@ -36,5 +37,12 @@
     "body": "Hi {name}, two-factor authentication was just turned off for your {siteName} account.",
     "button": "Review security settings",
     "note": "If you did not do this, change your password immediately and turn two-factor authentication back on."
+  },
+  "agentMessage": {
+    "subject": "{subject}",
+    "heading": "{subject}",
+    "body": "{body}",
+    "button": "",
+    "note": "This message was written by an AI agent on {siteName}. Reply to the sender if anything looks wrong."
   }
 }

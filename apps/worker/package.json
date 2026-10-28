@@ -11,6 +11,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@rentagent/agent-runtime": "workspace:*",
     "@rentagent/ai-gateway": "workspace:*",
     "@rentagent/core": "workspace:*",
     "@rentagent/db": "workspace:*",

@@ -2,6 +2,7 @@
 // Phase 1: installation settings, locales/translations, audit log, consent records.
 // Phase 2: users, sessions, credentials, verification tokens, two-factor (Better Auth models).
 // Phase 3: AI providers, keys, model registry, routing policies, usage metering.
+// Phase 4: agents, versions, tools, MCP servers, runs, approvals, files and knowledge (pgvector).
 // Later phases add users, providers, agents, runs and billing (see PLAN.md §7).
 
 generator client {
@@ -123,6 +124,8 @@ model User {
   accounts   Account[]
   twoFactors TwoFactor[]
   usage      UsageRecord[]
+  runs       Run[]
+  files      File[]
 
   @@index([role])
   @@index([createdAt])
@@ -353,4 +356,260 @@ model UsageRecord {
   @@index([modelId, createdAt])
   @@index([requestId])
   @@map("ai_usage_records")
+}
+
+// ---------------------------------------------------------------- Agents
+
+enum AgentStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+model Agent {
+  id                 String      @id @default(uuid()) @db.Uuid
+  slug               String      @unique @db.VarChar(80)
+  name               String      @db.VarChar(120)
+  category           String      @db.VarChar(40)
+  description        String      @default("") @db.VarChar(2000)
+  /// { "<locale>": { "name": "...", "description": "..." } }
+  localizations      Json        @default("{}")
+  status             AgentStatus @default(DRAFT)
+  /// Editable configuration (validated AgentConfig JSON); published versions are immutable copies.
+  draft              Json
+  publishedVersionId String?     @map("published_version_id") @db.Uuid
+  templateKey        String?     @map("template_key") @db.VarChar(60)
+  createdById        String?     @map("created_by_id") @db.VarChar(64)
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  versions  AgentVersion[]
+  runs      Run[]
+  knowledge KnowledgeSource[]
+
+  @@index([status])
+  @@map("agents")
+}
+
+model AgentVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  agentId     String   @map("agent_id") @db.Uuid
+  version     Int
+  config      Json
+  note        String?  @db.VarChar(300)
+  createdById String?  @map("created_by_id") @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  runs  Run[]
+
+  @@unique([agentId, version])
+  @@map("agent_versions")
+}
+
+/// Operator-defined HTTP tool. The host is fixed by the operator; the model only fills parameters.
+model HttpTool {
+  id               String   @id @default(uuid()) @db.Uuid
+  /// Function name exposed to models: ^[a-z][a-z0-9_]{2,40}$
+  name             String   @unique @db.VarChar(48)
+  description      String   @db.VarChar(1000)
+  method           String   @db.VarChar(8)
+  urlTemplate      String   @map("url_template") @db.VarChar(1000)
+  /// JSON Schema (object) for the parameters.
+  inputSchema      Json     @map("input_schema")
+  /// Encrypted JSON object of headers (may contain secrets), bound to "http-tool:<id>".
+  headersEncrypted String?  @map("headers_encrypted")
+  enabled          Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("http_tools")
+}
+
+model McpServer {
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String    @db.VarChar(80)
+  /// Prefix for tool names exposed to models.
+  slug                String    @unique @db.VarChar(32)
+  url                 String    @db.VarChar(500)
+  /// Encrypted Authorization header value, bound to "mcp-server:<id>".
+  authEncrypted       String?   @map("auth_encrypted")
+  enabled             Boolean   @default(true)
+  /// Last discovered tool list: [{ name, description, inputSchema }]
+  toolCache           Json      @default("[]") @map("tool_cache")
+  toolCacheUpdatedAt  DateTime? @map("tool_cache_updated_at") @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("mcp_servers")
+}
+
+// ---------------------------------------------------------------- Runs
+
+enum RunMode {
+  PREVIEW
+  LIVE
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  WAITING_APPROVAL
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+model Run {
+  id             String    @id @default(uuid()) @db.Uuid
+  agentId        String    @map("agent_id") @db.Uuid
+  agentVersionId String?   @map("agent_version_id") @db.Uuid
+  /// Exact configuration used (draft previews have no version).
+  config         Json
+  userId         String?   @map("user_id") @db.VarChar(64)
+  mode           RunMode   @default(PREVIEW)
+  status         RunStatus @default(QUEUED)
+  locale         String    @db.VarChar(35)
+  input          Json
+  /// Conversation state (model messages) so a run can resume after approval or restart.
+  messages       Json      @default("[]")
+  output         String?
+  errorKind      String?   @map("error_kind") @db.VarChar(40)
+  stepCount      Int       @default(0) @map("step_count")
+  inputTokens    Int       @default(0) @map("input_tokens")
+  outputTokens   Int       @default(0) @map("output_tokens")
+  costMicros     BigInt    @default(0) @map("cost_micros")
+  priceMicros    BigInt    @default(0) @map("price_micros")
+  cancelRequested Boolean  @default(false) @map("cancel_requested")
+  startedAt      DateTime? @map("started_at") @db.Timestamptz(3)
+  finishedAt     DateTime? @map("finished_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  agent     Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  version   AgentVersion? @relation(fields: [agentVersionId], references: [id], onDelete: SetNull)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  steps     RunStep[]
+  approvals Approval[]
+
+  @@index([agentId, createdAt])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("runs")
+}
+
+enum RunStepType {
+  MODEL
+  TOOL
+  APPROVAL
+  SYSTEM
+}
+
+model RunStep {
+  id         BigInt      @id @default(autoincrement())
+  runId      String      @map("run_id") @db.Uuid
+  idx        Int
+  type       RunStepType
+  toolName   String?     @map("tool_name") @db.VarChar(100)
+  ok         Boolean     @default(true)
+  /// Truncated, display-safe summary (never secrets).
+  detail     Json        @default("{}")
+  costMicros BigInt      @default(0) @map("cost_micros")
+  latencyMs  Int         @default(0) @map("latency_ms")
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, idx])
+  @@map("run_steps")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Approval {
+  id          String         @id @default(uuid()) @db.Uuid
+  runId       String         @map("run_id") @db.Uuid
+  toolCallId  String         @map("tool_call_id") @db.VarChar(120)
+  toolName    String         @map("tool_name") @db.VarChar(100)
+  input       Json
+  status      ApprovalStatus @default(PENDING)
+  decidedById String?        @map("decided_by_id") @db.VarChar(64)
+  decidedAt   DateTime?      @map("decided_at") @db.Timestamptz(3)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, toolCallId])
+  @@index([status])
+  @@map("approvals")
+}
+
+// ---------------------------------------------------------------- Files & knowledge
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  ERROR
+  SKIPPED
+}
+
+model File {
+  id           String     @id @default(uuid()) @db.Uuid
+  ownerId      String?    @map("owner_id") @db.VarChar(64)
+  originalName String     @map("original_name") @db.VarChar(255)
+  mime         String     @db.VarChar(100)
+  size         Int
+  sha256       String     @db.VarChar(64)
+  scanStatus   ScanStatus @default(PENDING) @map("scan_status")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  owner     User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  knowledge KnowledgeSource[]
+
+  @@map("files")
+}
+
+enum KnowledgeStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model KnowledgeSource {
+  id               String          @id @default(uuid()) @db.Uuid
+  agentId          String          @map("agent_id") @db.Uuid
+  fileId           String          @map("file_id") @db.Uuid
+  status           KnowledgeStatus @default(PENDING)
+  error            String?         @db.VarChar(80)
+  chunkCount       Int             @default(0) @map("chunk_count")
+  embeddingModelId String?         @map("embedding_model_id") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  agent  Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  chunks Chunk[]
+
+  @@index([agentId])
+  @@map("knowledge_sources")
+}
+
+/// Text chunk with an embedding. Written and searched with raw SQL (pgvector).
+model Chunk {
+  id               BigInt                 @id @default(autoincrement())
+  sourceId         String                 @map("source_id") @db.Uuid
+  agentId          String                 @map("agent_id") @db.Uuid
+  idx              Int
+  content          String
+  embedding        Unsupported("vector")?
+  embeddingModelId String                 @map("embedding_model_id") @db.Uuid
+
+  source KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, embeddingModelId])
+  @@map("chunks")
 }

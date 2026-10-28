@@ -17,6 +17,10 @@ const serverEnvSchema = z.object({
   FILES_DIR: z.string().default('/data/files'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   RENTAGENT_VERSION: z.string().default('dev'),
+  /** clamd host for malware scanning of uploads; empty disables scanning (files are marked SKIPPED). */
+  CLAMAV_HOST: z.string().optional().default(''),
+  CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+  RUN_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(4),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

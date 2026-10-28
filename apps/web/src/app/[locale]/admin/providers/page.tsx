@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { db } from '@/lib/server/runtime';
 import { requirePermission } from '@/lib/server/session';
 import { AddProviderForm } from './add-provider-form';
+import { EmbeddingModelSelect } from './embedding-model';
 import { KillSwitch } from './kill-switch';
 
 interface PageProps {
@@ -24,7 +25,7 @@ export default async function ProvidersPage({ params }: PageProps) {
   await requirePermission(locale, 'providers.manage', '/admin/providers');
   const t = await getTranslations('AdminAi.providers');
 
-  const [providers, disabled] = await Promise.all([
+  const [providers, disabled, embeddingModels, embeddingModelId] = await Promise.all([
     db().provider.findMany({
       orderBy: { createdAt: 'asc' },
       include: {
@@ -35,6 +36,12 @@ export default async function ProvidersPage({ params }: PageProps) {
       },
     }),
     getSetting(db(), 'ai.disabled'),
+    db().aiModel.findMany({
+      where: { kind: 'EMBEDDING', enabled: true, provider: { enabled: true } },
+      select: { id: true, displayName: true, provider: { select: { name: true } } },
+      orderBy: { displayName: 'asc' },
+    }),
+    getSetting(db(), 'ai.embeddingModelId'),
   ]);
 
   return (
@@ -45,6 +52,13 @@ export default async function ProvidersPage({ params }: PageProps) {
       <p className="text-muted">{t('intro')}</p>
 
       <KillSwitch disabled={Boolean(disabled)} />
+      <EmbeddingModelSelect
+        models={embeddingModels.map((model) => ({
+          id: model.id,
+          label: `${model.provider.name} · ${model.displayName}`,
+        }))}
+        current={embeddingModelId ?? null}
+      />
 
       {providers.length === 0 ? (
         <p className="rounded-lg border border-border bg-surface p-6">{t('empty')}</p>

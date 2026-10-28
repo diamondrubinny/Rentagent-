@@ -14,10 +14,15 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
   const user = await requirePermission(locale, 'admin.access');
   const t = await getTranslations('Admin');
   const tAi = await getTranslations('AdminAi');
+  const tAgents = await getTranslations('AdminAgents');
+  const tTools = await getTranslations('AdminTools');
   const links = [
     { href: '/admin', label: t('overview.title'), show: true },
     { href: '/admin/users', label: t('users.title'), show: can(user.role, 'users.read') },
     { href: '/admin/audit', label: t('audit.title'), show: can(user.role, 'audit.read') },
+    { href: '/admin/agents', label: tAgents('list.title'), show: can(user.role, 'agents.manage') },
+    { href: '/admin/runs', label: tAgents('runs.title'), show: can(user.role, 'agents.manage') },
+    { href: '/admin/tools', label: tTools('title'), show: can(user.role, 'settings.manage') },
     {
       href: '/admin/providers',
       label: tAi('providers.title'),

@@ -12,7 +12,10 @@ type TemplateStrings = {
   button: string;
   note: string;
 };
-type Catalog = { layout: { footer: string } } & Record<MailTemplate, TemplateStrings>;
+type Catalog = { layout: { footer: string; footerPlain: string } } & Record<
+  MailTemplate,
+  TemplateStrings
+>;
 
 const CATALOGS: Record<string, Catalog> = { en, he, ar, ru };
 
@@ -69,16 +72,17 @@ export function renderMail(
 ): RenderedMail {
   const { catalog, locale } = catalogFor(requestedLocale);
   const strings = catalog[template];
-  const url = safeUrl(vars.url);
+  // Templates without a button (agent messages) carry no link.
+  const url = strings.button ? safeUrl(vars.url) : null;
   const dir = getTextDirection(locale);
   const align = dir === 'rtl' ? 'right' : 'left';
   const plain = (text: string) => interpolate(text, vars, (v) => v);
-  const html = (text: string) => interpolate(text, vars, escapeHtml);
+  const html = (text: string) => interpolate(text, vars, escapeHtml).replace(/\r?\n/g, '<br>');
 
   const subject = plain(strings.subject)
     .replace(/[\r\n]+/g, ' ')
     .trim();
-  const footer = catalog.layout.footer;
+  const footer = url ? catalog.layout.footer : catalog.layout.footerPlain;
 
   const htmlBody = `<!doctype html>
 <html lang="${escapeHtml(locale)}" dir="${dir}">
@@ -94,10 +98,10 @@ export function renderMail(
 <tr><td dir="${dir}" align="${align}" style="padding:32px;text-align:${align};line-height:1.6;">
 <h1 style="margin:0 0 16px;font-size:22px;">${html(strings.heading)}</h1>
 <p style="margin:0 0 24px;font-size:16px;">${html(strings.body)}</p>
-<p style="margin:0 0 24px;"><a href="${escapeHtml(url)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">${html(strings.button)}</a></p>
+${url ? `<p style="margin:0 0 24px;"><a href="${escapeHtml(url)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">${html(strings.button)}</a></p>` : ''}
 <p style="margin:0 0 24px;font-size:14px;color:#4a5160;">${html(strings.note)}</p>
 <hr style="border:none;border-top:1px solid #c9ced8;margin:24px 0;">
-<p style="margin:0;font-size:12px;color:#4a5160;">${html(footer)}<br><a href="${escapeHtml(url)}" dir="ltr" style="color:#1d4ed8;word-break:break-all;">${escapeHtml(url)}</a></p>
+<p style="margin:0;font-size:12px;color:#4a5160;">${html(footer)}${url ? `<br><a href="${escapeHtml(url)}" dir="ltr" style="color:#1d4ed8;word-break:break-all;">${escapeHtml(url)}</a>` : ''}</p>
 </td></tr>
 </table>
 </td></tr>
@@ -110,13 +114,12 @@ export function renderMail(
     '',
     plain(strings.body),
     '',
-    `${plain(strings.button)}: ${url}`,
-    '',
+    ...(url ? [`${plain(strings.button)}: ${url}`, ''] : []),
     plain(strings.note),
     '',
     '—',
     plain(footer),
-    url,
+    ...(url ? [url] : []),
   ].join('\n');
 
   return { subject, html: htmlBody, text };

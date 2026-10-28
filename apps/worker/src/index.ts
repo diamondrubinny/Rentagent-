@@ -1,7 +1,9 @@
-import { getLogger, getServerEnv, parseKeyring, QUEUE_NAMES } from '@rentagent/core';
+import { getLogger, getServerEnv, parseKeyring, QUEUE_NAMES, type RunJob } from '@rentagent/core';
 import { getDb } from '@rentagent/db';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
+import { executeRun, type RuntimeDeps } from '@rentagent/agent-runtime';
+import { createFileWorker } from './files';
 import { createMailWorker } from './mail';
 
 const HEARTBEAT_KEY = 'worker:heartbeat';
@@ -15,6 +17,16 @@ const env = getServerEnv();
 const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 const db = getDb(env.DATABASE_URL);
 const keyring = parseKeyring(env.APP_ENCRYPTION_KEY, env.APP_ENCRYPTION_KEYS_PREVIOUS);
+// A separate non-blocking connection for regular commands (locks, pub/sub publish, counters).
+const commands = new Redis(env.REDIS_URL, { maxRetriesPerRequest: 3 });
+const runtimeDeps: RuntimeDeps = {
+  db,
+  redis: commands,
+  keyring,
+  log,
+  redisUrl: env.REDIS_URL,
+  appUrl: env.APP_URL,
+};
 
 async function beat(): Promise<void> {
   await connection.set(HEARTBEAT_KEY, new Date().toISOString(), 'EX', HEARTBEAT_TTL_SECONDS);
@@ -37,6 +49,21 @@ const workers: Worker[] = [
     { connection, concurrency: 1 },
   ),
   createMailWorker({ connection, db, keyring, log }),
+  new Worker<RunJob>(
+    QUEUE_NAMES.runs,
+    async (job) => void (await executeRun(runtimeDeps, job.data.runId)),
+    {
+      connection,
+      concurrency: env.RUN_CONCURRENCY,
+      // Agent runs can take minutes; keep the job lock alive meanwhile.
+      lockDuration: 10 * 60 * 1000,
+    },
+  ),
+  createFileWorker(connection, runtimeDeps, {
+    filesDir: env.FILES_DIR,
+    clamavHost: env.CLAMAV_HOST,
+    clamavPort: env.CLAMAV_PORT,
+  }),
 ];
 
 for (const worker of workers) {
@@ -67,6 +94,7 @@ async function shutdown(signal: string): Promise<void> {
   await Promise.all(workers.map((worker) => worker.close()));
   await systemQueue.close();
   await db.$disconnect();
+  await commands.quit();
   await connection.quit();
   process.exit(0);
 }

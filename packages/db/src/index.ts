@@ -10,5 +10,12 @@ export {
   ModelKind,
   RoutingStrategy,
   UsageStatus,
+  AgentStatus,
+  RunMode,
+  RunStatus,
+  RunStepType,
+  ApprovalStatus,
+  ScanStatus,
+  KnowledgeStatus,
 } from './generated/prisma/client';
 export type { PrismaClient } from './generated/prisma/client';

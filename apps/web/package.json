@@ -12,17 +12,21 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@rentagent/agent-runtime": "workspace:*",
     "@rentagent/ai-gateway": "workspace:*",
     "@rentagent/core": "workspace:*",
     "@rentagent/db": "workspace:*",
     "@rentagent/mail": "workspace:*",
     "@rentagent/shared": "workspace:*",
     "better-auth": "1.7.14",
+    "ioredis": "5.11.1",
     "next": "16.4.3",
     "next-intl": "4.14.9",
     "qrcode": "1.5.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
     "server-only": "0.0.1",
     "zod": "4.6.7"
   },

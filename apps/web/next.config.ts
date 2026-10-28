@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     '@rentagent/mail',
     '@rentagent/ai-gateway',
   ],
-  serverExternalPackages: ['pino', 'pg', 'nodemailer'],
+  serverExternalPackages: ['pino', 'pg', 'nodemailer', 'unpdf'],
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {

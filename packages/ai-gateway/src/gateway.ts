@@ -1,11 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { decryptSecret, type Keyring } from '@rentagent/core';
 import { getSetting, type PrismaClient } from '@rentagent/db';
-import { generateText, type ModelMessage, streamText } from 'ai';
+import {
+  dynamicTool,
+  embedMany,
+  generateText,
+  jsonSchema,
+  type JSONSchema7,
+  type ModelMessage,
+  streamText,
+} from 'ai';
 import type { Redis } from 'ioredis';
 import type { ProviderTypeName } from './catalog';
 import { classifyError, type ClassifiedError, type ErrorKind } from './errors';
-import { createLanguageModel, type ProviderConnection } from './factory';
+import { createEmbeddingModel, createLanguageModel, type ProviderConnection } from './factory';
 import { costMicros } from './pricing';
 import { orderCandidates, runWithFallback, type Strategy } from './router';
 
@@ -39,6 +47,17 @@ export interface GenerationInput {
   temperature?: number;
   /** Per-attempt timeout. */
   timeoutMs?: number;
+  /**
+   * Tools the model may call. They have no executor here: tool calls are returned
+   * to the caller (the agent runtime), which decides, asks for approval, and executes.
+   */
+  tools?: Record<string, { description: string; inputSchema: JSONSchema7 }>;
+}
+
+export interface ToolCallRequest {
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
 }
 
 export interface AttemptSummary {
@@ -301,12 +320,30 @@ function promptOf(input: GenerationInput) {
 }
 
 /** Non-streaming generation with fallback and metering. */
+function toolSetOf(tools: GenerationInput['tools']) {
+  if (!tools || Object.keys(tools).length === 0) return undefined;
+  return Object.fromEntries(
+    Object.entries(tools).map(([name, tool]) => [
+      name,
+      dynamicTool({ description: tool.description, inputSchema: jsonSchema(tool.inputSchema) }),
+    ]),
+  );
+}
+
+export interface GenerateResult extends CallSummary {
+  text: string;
+  toolCalls: ToolCallRequest[];
+  /** Assistant/tool messages to append to the conversation. */
+  responseMessages: ModelMessage[];
+  finishReason: string;
+}
+
 export async function generate(
   deps: GatewayDeps,
   target: Target,
   input: GenerationInput,
   context: CallContext,
-): Promise<CallSummary & { text: string }> {
+): Promise<GenerateResult> {
   const ctx = { ...context, requestId: context.requestId ?? randomUUID() };
   const candidates = await resolveCandidates(deps, target);
   const attempts: AttemptSummary[] = [];
@@ -318,6 +355,7 @@ export async function generate(
         const response = await generateText({
           model: createLanguageModel(connectionFor(deps, candidate), candidate.model.modelId),
           ...promptOf(input),
+          tools: toolSetOf(input.tools),
           maxOutputTokens: input.maxOutputTokens,
           temperature: input.temperature,
           maxRetries: 0, // retries are handled by the fallback chain
@@ -334,7 +372,21 @@ export async function generate(
           latencyMs,
         });
         attempts.push(summarize(candidate));
-        return { text: response.text, usage, cost, price, latencyMs, candidate };
+        return {
+          text: response.text,
+          toolCalls: response.toolCalls.map((call) => ({
+            toolCallId: call.toolCallId,
+            toolName: call.toolName,
+            input: call.input,
+          })),
+          responseMessages: response.responseMessages as ModelMessage[],
+          finishReason: response.finishReason,
+          usage,
+          cost,
+          price,
+          latencyMs,
+          candidate,
+        };
       },
       async (candidate, error) => {
         attempts.push(summarize(candidate, error));
@@ -352,6 +404,9 @@ export async function generate(
     return {
       requestId: ctx.requestId,
       text: result.text,
+      toolCalls: result.toolCalls,
+      responseMessages: result.responseMessages,
+      finishReason: result.finishReason,
       model: {
         id: result.candidate.model.id,
         modelId: result.candidate.model.modelId,
@@ -491,4 +546,64 @@ export async function stream(
   }
 
   return { requestId: ctx.requestId, textStream: textStream(), done };
+}
+
+/**
+ * Embeds texts with a registry embedding model, rotating across the provider's
+ * keys on transient errors. Usage is metered like any other call.
+ */
+export async function embedTexts(
+  deps: GatewayDeps,
+  modelRowId: string,
+  values: string[],
+  context: CallContext,
+): Promise<{ embeddings: number[][]; costMicros: bigint }> {
+  if (await getSetting(deps.db, 'ai.disabled')) throw new AiUnavailableError('disabled');
+  const model = await deps.db.aiModel.findFirst({
+    where: { id: modelRowId, enabled: true, kind: 'EMBEDDING', provider: { enabled: true } },
+    include: { provider: true },
+  });
+  if (!model) throw new AiUnavailableError('no_models');
+  const keys = await usableKeys(deps, model.providerId);
+  const candidates: Candidate[] =
+    keys.length > 0
+      ? keys.map((key) => ({ model: model as ModelRow, key }))
+      : model.provider.type === 'OPENAI_COMPATIBLE'
+        ? [{ model: model as ModelRow, key: null }]
+        : [];
+  if (candidates.length === 0) throw new AiUnavailableError('no_keys');
+
+  const ctx = { ...context, requestId: context.requestId ?? randomUUID() };
+  let attemptNo = 0;
+  try {
+    const { result } = await runWithFallback(
+      candidates,
+      async (candidate) => {
+        attemptNo++;
+        const started = Date.now();
+        const response = await embedMany({
+          model: createEmbeddingModel(connectionFor(deps, candidate), candidate.model.modelId),
+          values,
+          maxRetries: 0,
+          abortSignal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+        });
+        const { cost } = await recordAttempt(deps, ctx, candidate, attemptNo, {
+          ok: true,
+          inputTokens: response.usage.tokens ?? 0,
+          outputTokens: 0,
+          latencyMs: Date.now() - started,
+        });
+        return { embeddings: response.embeddings, costMicros: cost };
+      },
+      async (candidate, error) => {
+        await recordAttempt(deps, ctx, candidate, attemptNo, { ok: false, error, latencyMs: 0 });
+      },
+    );
+    return result;
+  } catch (error) {
+    throw new GatewayCallError(
+      classifyError((error as { cause?: unknown }).cause ?? error).kind,
+      [],
+    );
+  }
 }

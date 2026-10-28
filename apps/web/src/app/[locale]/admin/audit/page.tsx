@@ -5,7 +5,17 @@ import { db } from '@/lib/server/runtime';
 import { requirePermission } from '@/lib/server/session';
 
 const PAGE_SIZE = 50;
-const ACTION_GROUPS = ['auth', 'admin', 'ai', 'setup', 'settings'] as const;
+const ACTION_GROUPS = [
+  'auth',
+  'admin',
+  'ai',
+  'agents',
+  'runs',
+  'tools',
+  'files',
+  'setup',
+  'settings',
+] as const;
 
 interface PageProps {
   params: Promise<{ locale: string }>;

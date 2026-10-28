@@ -24,6 +24,8 @@ export interface SettingValues {
   'auth.registrationMode': 'open' | 'closed';
   /** Global AI kill switch: when true, no provider calls are made. */
   'ai.disabled': boolean;
+  /** AiModel.id (kind EMBEDDING) used for knowledge bases. */
+  'ai.embeddingModelId': string;
   'setup.completedAt': string; // ISO timestamp
 }
 

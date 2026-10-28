@@ -1,0 +1,29 @@
+{
+  "name": "@rentagent/agent-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@rentagent/ai-gateway": "workspace:*",
+    "@rentagent/core": "workspace:*",
+    "@rentagent/db": "workspace:*",
+    "@rentagent/shared": "workspace:*",
+    "ai": "7.0.155",
+    "ioredis": "5.11.1",
+    "undici": "7.30.1",
+    "unpdf": "1.9.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "4.1.12"
+  }
+}
