@@ -12,6 +12,7 @@ trap 'rm -rf "$staging"' EXIT
 
 mkdir -p "$staging/$name" "$out_dir"
 cp "$root"/deploy/{install.sh,rentagent,docker-compose.yml,Caddyfile,REQUIREMENTS.md} "$staging/$name/"
+cp "$root"/docs/{OPERATOR.md,PRODUCTION-CHECKLIST.md} "$staging/$name/"
 printf '%s\n' "$version" > "$staging/$name/VERSION"
 chmod 0755 "$staging/$name/install.sh" "$staging/$name/rentagent"
 

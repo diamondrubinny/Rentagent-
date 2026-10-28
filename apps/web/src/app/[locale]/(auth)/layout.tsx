@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ClientMessages } from '@/components/client-messages';
 import { redirect } from '@/i18n/navigation';
 import { getSiteConfig } from '@/lib/server/site';
 
@@ -11,5 +12,5 @@ interface AuthLayoutProps {
 export default async function AuthLayout({ children, params }: AuthLayoutProps) {
   const { locale } = await params;
   if (!(await getSiteConfig()).setupComplete) redirect({ href: '/setup', locale });
-  return children;
+  return <ClientMessages namespaces={['Auth', 'AuthErrors']}>{children}</ClientMessages>;
 }

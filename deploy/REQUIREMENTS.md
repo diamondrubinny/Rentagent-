@@ -1,8 +1,9 @@
 # RentAgent — Server Requirements
 
 RentAgent is installed on **your own server**. All data (users, conversations, files, API keys)
-stays on that server. Only the license key, domain and installed version are sent to the vendor
-for license validation and update checks.
+stays on that server. Licenses are verified offline. Only if you set `LICENSE_SERVER_URL`, the
+license id, your domain and the installed version are sent once a day to the vendor's license
+server — never data about users.
 
 > Figures below are initial estimates and will be validated by load tests before general availability.
 
@@ -43,7 +44,7 @@ Install Docker using the official guide: <https://docs.docker.com/engine/install
 - Outbound HTTPS (443) to:
   - the AI providers you configure (e.g. OpenAI, Anthropic, Google, …),
   - `ghcr.io` (application images) and Docker Hub (database, cache and proxy images),
-  - the vendor license server,
+  - the vendor license server (only if `LICENSE_SERVER_URL` is set),
   - your SMTP server (usually port 587 or 465).
 
 ## 4. Email

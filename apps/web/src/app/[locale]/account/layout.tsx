@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { ClientMessages } from '@/components/client-messages';
 import { Link } from '@/i18n/navigation';
 import { getBillingConfig } from '@/lib/server/billing';
 import { requireUser } from '@/lib/server/session';
@@ -42,7 +43,11 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
           </li>
         </ul>
       </nav>
-      <div>{children}</div>
+      <div>
+        <ClientMessages namespaces={['Account', 'AuthErrors', 'Billing', 'Privacy']}>
+          {children}
+        </ClientMessages>
+      </div>
     </div>
   );
 }

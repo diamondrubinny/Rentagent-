@@ -14,7 +14,11 @@ export const DEFAULT_BRANDING: Branding = {
   favicon: null,
   hidePoweredBy: false,
 };
-export const DEFAULT_FEATURES: Features = { feedback: true, semanticSearch: true };
+export const DEFAULT_FEATURES: Features = {
+  feedback: true,
+  semanticSearch: true,
+  a11yWidget: true,
+};
 
 export const getBranding = cache(async () => {
   const settings = await getSettings(db(), ['branding', 'features'] as const);

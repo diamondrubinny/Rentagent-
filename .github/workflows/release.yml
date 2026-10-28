@@ -50,9 +50,18 @@ jobs:
     needs: images
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: scripts/package-release.sh "${GITHUB_REF_NAME#v}" dist
+      - name: SBOM and dependency license policy
+        run: node scripts/sbom.mjs "dist/rentagent-${GITHUB_REF_NAME#v}.sbom.cdx.json"
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/*.tar.gz
             dist/*.sha256
+            dist/*.sbom.cdx.json

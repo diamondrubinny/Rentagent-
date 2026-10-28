@@ -224,11 +224,16 @@ export function ImageForm({ kind, current }: { kind: 'logo' | 'favicon'; current
 export function FeaturesForm({
   feedback,
   semanticSearch,
+  a11yWidget,
   hidePoweredBy,
+  whiteLabel,
 }: {
   feedback: boolean;
   semanticSearch: boolean;
+  a11yWidget: boolean;
   hidePoweredBy: boolean;
+  /** The license allows removing the credit line. */
+  whiteLabel: boolean;
 }) {
   const t = useTranslations('AdminBranding');
   const { pending, result, run } = useResult();
@@ -242,6 +247,7 @@ export function FeaturesForm({
           saveFeatures({
             feedback: form.get('feedback') === 'on',
             semanticSearch: form.get('semanticSearch') === 'on',
+            a11yWidget: form.get('a11yWidget') === 'on',
             hidePoweredBy: form.get('hidePoweredBy') === 'on',
           }),
         );
@@ -251,17 +257,20 @@ export function FeaturesForm({
       {result && !result.ok && (
         <FormMessage tone="error">{t(`errors.${result.error}`)}</FormMessage>
       )}
-      {(['feedback', 'semanticSearch', 'hidePoweredBy'] as const).map((name) => (
+      {(['feedback', 'semanticSearch', 'a11yWidget', 'hidePoweredBy'] as const).map((name) => (
         <label key={name} className="flex items-start gap-3">
           <input
             type="checkbox"
             name={name}
-            defaultChecked={{ feedback, semanticSearch, hidePoweredBy }[name]}
+            defaultChecked={{ feedback, semanticSearch, a11yWidget, hidePoweredBy }[name]}
             className="mt-1 size-5"
           />
           <span>
             <span className="block font-semibold">{t(`feature_${name}`)}</span>
             <span className="block text-sm text-muted">{t(`feature_${name}Hint`)}</span>
+            {name === 'hidePoweredBy' && !whiteLabel && (
+              <span className="block text-sm font-semibold">{t('needsWhiteLabel')}</span>
+            )}
           </span>
         </label>
       ))}

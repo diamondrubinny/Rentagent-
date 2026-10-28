@@ -4,6 +4,7 @@ import { ConsentManager } from '@/components/consent/consent-manager';
 import { Link } from '@/i18n/navigation';
 import { getBillingConfig } from '@/lib/server/billing';
 import { getBranding } from '@/lib/server/branding';
+import { whiteLabelAllowed } from '@/lib/server/license';
 import { getEnabledLocales } from '@/lib/server/locales';
 
 interface SiteFooterProps {
@@ -16,8 +17,9 @@ export async function SiteFooter({ siteName, optionalTrackersEnabled }: SiteFoot
   const billingEnabled = await getBillingConfig()
     .then((billing) => billing.settings.enabled)
     .catch(() => false);
+  // Hiding the credit line needs a license with white-labelling.
   const hidePoweredBy = await getBranding()
-    .then(({ branding }) => branding.hidePoweredBy)
+    .then(async ({ branding }) => branding.hidePoweredBy && (await whiteLabelAllowed()))
     .catch(() => false);
   const currentLocale = await getLocale();
   const languages = (await getEnabledLocales()).map(({ code, nativeName, direction }) => ({

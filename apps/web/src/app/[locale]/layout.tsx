@@ -1,10 +1,14 @@
 import { getTextDirection } from '@rentagent/shared';
 import type { Metadata, Viewport } from 'next';
-import { hasLocale, NextIntlClientProvider } from 'next-intl';
+import { hasLocale } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { ClientMessages } from '@/components/client-messages';
+import { AccessibilityMenu } from '@/components/a11y/accessibility-menu';
 import { SiteFooter } from '@/components/site-footer';
+import { A11Y_BOOT_SCRIPT } from '@/lib/a11y-preferences';
 import { SiteHeader } from '@/components/site-header';
 import { routing } from '@/i18n/routing';
 import { ensureRoutingPublished, getEnabledLocales } from '@/lib/server/locales';
@@ -57,17 +61,23 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   const t = await getTranslations('Common');
   const site = await getSiteConfig();
-  const theme = brandingCss((await getBranding()).branding);
+  const { branding: brand, features } = await getBranding();
+  const theme = brandingCss(brand);
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   return (
-    <html lang={locale} dir={getTextDirection(locale)}>
+    <html lang={locale} dir={getTextDirection(locale)} suppressHydrationWarning>
+      <head>
+        {/* Applies saved reading aids before the first paint (nonce: strict CSP). */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: A11Y_BOOT_SCRIPT }} />
+      </head>
       <body className="flex min-h-screen flex-col">
         {theme && (
           <style href="rentagent-brand" precedence="high">
             {theme}
           </style>
         )}
-        <NextIntlClientProvider>
+        <ClientMessages>
           <a
             href="#main"
             className="btn btn-primary absolute start-2 top-2 z-50 -translate-y-24 focus:translate-y-0"
@@ -79,7 +89,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             {children}
           </main>
           <SiteFooter siteName={site.name} optionalTrackersEnabled={site.optionalTrackersEnabled} />
-        </NextIntlClientProvider>
+          {features.a11yWidget && <AccessibilityMenu />}
+        </ClientMessages>
       </body>
     </html>
   );

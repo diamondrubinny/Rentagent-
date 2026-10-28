@@ -9,7 +9,6 @@ export interface SettingValues {
   'site.defaultLocale': string;
   'site.timeZone': string;
   'billing.baseCurrency': string;
-  'license.key': string; // encrypted
   'mail.smtp': {
     enabled: boolean;
     host: string;
@@ -68,6 +67,38 @@ export interface SettingValues {
   features: {
     feedback: boolean;
     semanticSearch: boolean;
+    /** Floating reading-aids menu (text size, contrast, …). */
+    a11yWidget: boolean;
+  };
+  /** Operator details and document state for the legal pages. */
+  legal: {
+    company: string;
+    address: string;
+    country: string;
+    contactEmail: string;
+    privacyEmail: string;
+    dpoName: string;
+    accessibilityName: string;
+    accessibilityEmail: string;
+    accessibilityPhone: string;
+    accessibilityResponseDays: number;
+    /** Pages the operator confirmed were reviewed by a qualified professional. */
+    reviewed: Partial<Record<'privacy' | 'terms' | 'cookies' | 'accessibility', boolean>>;
+    /** Operator-written Markdown per page and locale, replacing the template. */
+    overrides: Partial<
+      Record<'privacy' | 'terms' | 'cookies' | 'accessibility', Record<string, string>>
+    >;
+    updatedAt: string;
+  };
+  /** License token entered by the operator and the state of online checks. */
+  license: {
+    token: string;
+    activatedAt: string | null;
+    check: {
+      lastAttemptAt: string | null;
+      lastSuccessAt: string | null;
+      status: 'valid' | 'revoked' | 'unknown' | null;
+    };
   };
   'setup.completedAt': string; // ISO timestamp
 }

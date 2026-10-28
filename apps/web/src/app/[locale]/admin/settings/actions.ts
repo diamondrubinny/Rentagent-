@@ -1,13 +1,15 @@
 'use server';
 
-import { settingUpsert } from '@rentagent/db';
-import { nameField, REGISTRATION_MODES } from '@rentagent/shared';
+import { decryptSecret, encryptSecret } from '@rentagent/core';
+import { getSetting, settingUpsert } from '@rentagent/db';
+import { verifySmtp } from '@rentagent/mail';
+import { nameField, REGISTRATION_MODES, SMTP_SECURITY } from '@rentagent/shared';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { type ActionResult, authorizeAction } from '@/lib/server/admin-action';
 import { audit } from '@/lib/server/audit';
 import { resetAuth } from '@/lib/server/auth';
-import { db } from '@/lib/server/runtime';
+import { db, encryptionKeyring } from '@/lib/server/runtime';
 import { getSiteConfig } from '@/lib/server/site';
 
 const settingsSchema = z.object({
@@ -91,6 +93,103 @@ export async function updateUsageSettings(input: {
       userDailyRunLimit,
       runRetentionDays,
     },
+  });
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+const mailSchema = z
+  .object({
+    enabled: z.boolean(),
+    host: z.string().trim().max(253, { error: 'tooLong' }),
+    port: z.coerce
+      .number({ error: 'invalidPort' })
+      .int({ error: 'invalidPort' })
+      .min(1, { error: 'invalidPort' })
+      .max(65535, { error: 'invalidPort' }),
+    security: z.enum(SMTP_SECURITY, { error: 'invalidOption' }),
+    user: z.string().trim().max(320, { error: 'tooLong' }),
+    password: z.string().max(1024, { error: 'tooLong' }),
+    fromEmail: z.string().trim().max(320, { error: 'tooLong' }),
+    fromName: z.string().trim().max(120, { error: 'tooLong' }),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.enabled) return;
+    if (!data.host) ctx.addIssue({ code: 'custom', path: ['host'], message: 'required' });
+    if (!z.email().safeParse(data.fromEmail).success)
+      ctx.addIssue({ code: 'custom', path: ['fromEmail'], message: 'invalidEmail' });
+  });
+
+/**
+ * Outgoing email. The connection is tested before saving; an empty password keeps
+ * the stored one (changing the server, security or user requires entering it again).
+ */
+export async function updateMailSettings(input: {
+  enabled: boolean;
+  host: string;
+  port: string;
+  security: string;
+  user: string;
+  password: string;
+  fromEmail: string;
+  fromName: string;
+}): Promise<SettingsResult> {
+  const actor = await authorizeAction('settings.manage');
+  if (!actor) return { ok: false, error: 'forbidden' };
+  const parsed = mailSchema.safeParse(input);
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return { ok: false, error: 'invalid', fieldErrors };
+  }
+  const data = parsed.data;
+  const current = await getSetting(db(), 'mail.smtp');
+  if (!data.enabled && (await getSetting(db(), 'auth.registrationMode')) === 'open')
+    return { ok: false, error: 'smtpInUse' };
+  const keyring = encryptionKeyring();
+  // The stored password is only reused for the same server, connection and account, so it
+  // can never be sent to another host or over a weaker connection.
+  const sameAccount =
+    current?.host === data.host &&
+    current?.port === data.port &&
+    current?.security === data.security &&
+    current?.user === data.user;
+  const password =
+    data.password ||
+    (sameAccount && current?.passwordEncrypted
+      ? decryptSecret(current.passwordEncrypted, 'setting:mail.smtp.password', keyring)
+      : '');
+  if (data.enabled) {
+    const reachable = await verifySmtp({
+      host: data.host,
+      port: data.port,
+      security: data.security,
+      user: data.user,
+      password,
+    });
+    if (!reachable) return { ok: false, error: 'smtpFailed' };
+  }
+  await db().setting.upsert(
+    settingUpsert(
+      'mail.smtp',
+      {
+        enabled: data.enabled,
+        host: data.host,
+        port: data.port,
+        security: data.security,
+        user: data.user,
+        passwordEncrypted: password
+          ? encryptSecret(password, 'setting:mail.smtp.password', keyring)
+          : '',
+        fromEmail: data.fromEmail,
+        fromName: data.fromName,
+      },
+      actor.id,
+    ),
+  );
+  await audit('settings.mail_updated', {
+    actorId: actor.id,
+    meta: { enabled: data.enabled, passwordChanged: Boolean(data.password) },
   });
   revalidatePath('/', 'layout');
   return { ok: true };

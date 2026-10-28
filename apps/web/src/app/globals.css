@@ -207,3 +207,40 @@ body {
     break-inside: avoid;
   }
 }
+
+/* Reading aids chosen in the accessibility menu (see lib/a11y-preferences.ts). */
+html[data-a11y-size='115'] {
+  font-size: 115%;
+}
+html[data-a11y-size='130'] {
+  font-size: 130%;
+}
+html[data-a11y-size='150'] {
+  font-size: 150%;
+}
+html[data-a11y-contrast] {
+  --color-muted: var(--color-fg);
+  --color-border: var(--color-fg);
+  --color-surface: var(--color-bg);
+}
+html[data-a11y-links] a {
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 3px;
+  background: var(--color-warning-bg);
+  color: var(--color-fg) !important;
+}
+html[data-a11y-font] body {
+  font-family: Verdana, Tahoma, 'Noto Sans', 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.04em;
+  word-spacing: 0.1em;
+  line-height: 1.9;
+}
+html[data-a11y-motion] *,
+html[data-a11y-motion] *::before,
+html[data-a11y-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

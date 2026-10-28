@@ -6,6 +6,8 @@ import { Redis } from 'ioredis';
 import { executeRun, type RuntimeDeps } from '@rentagent/agent-runtime';
 import { settleOrphanRuns, settleRun } from '@rentagent/billing';
 import { createFileWorker } from './files';
+import { checkLicense } from './license';
+import { purgeRecords } from './retention';
 import { indexAgent, purgeExpired, reindexAgents } from './maintenance';
 import { translateAgent, translateLocale } from './translate';
 import { createMailWorker } from './mail';
@@ -82,9 +84,13 @@ const workers: Worker[] = [
         case 'reindex-agents':
           log.info({ agents: await reindexAgents(runtimeDeps) }, 'agents reindexed');
           return;
+        case 'license-check':
+          await checkLicense({ db, log }, env);
+          return;
         case 'retention':
           await settleOrphanRuns(db);
           await purgeExpired(runtimeDeps);
+          await purgeRecords({ db, log });
           return;
         case 'translate-locale': {
           const data = job.data as { locale: string; entries: Record<string, string> };
@@ -160,6 +166,11 @@ async function main(): Promise<void> {
     'retention',
     { every: 60 * 60 * 1000, immediately: true },
     { name: 'retention', opts: { removeOnComplete: true, removeOnFail: 100 } },
+  );
+  await systemQueue.upsertJobScheduler(
+    'license-check',
+    { every: 24 * 60 * 60 * 1000, immediately: true },
+    { name: 'license-check', opts: { removeOnComplete: true, removeOnFail: 100 } },
   );
   // Agents created before search indexing existed (or restored from a backup).
   if (await db.agent.count({ where: { searchText: '' } }))

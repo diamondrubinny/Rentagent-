@@ -105,6 +105,7 @@ export async function removeBrandImage(kind: 'logo' | 'favicon'): Promise<Brandi
 export async function saveFeatures(input: {
   feedback: boolean;
   semanticSearch: boolean;
+  a11yWidget: boolean;
   hidePoweredBy: boolean;
 }): Promise<BrandingResult> {
   const actor = await authorizeAction('settings.manage');
@@ -112,6 +113,7 @@ export async function saveFeatures(input: {
   const features = {
     feedback: input.feedback === true,
     semanticSearch: input.semanticSearch === true,
+    a11yWidget: input.a11yWidget === true,
   };
   await db().setting.upsert(settingUpsert('features', features, actor.id));
   await save(

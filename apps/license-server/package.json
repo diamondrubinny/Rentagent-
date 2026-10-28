@@ -1,0 +1,23 @@
+{
+  "name": "@rentagent/license-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "admin": "tsx src/cli.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rentagent/license": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "tsx": "4.23.15",
+    "vitest": "4.1.12"
+  }
+}

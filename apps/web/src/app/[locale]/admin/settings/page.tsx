@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { db } from '@/lib/server/runtime';
 import { requirePermission } from '@/lib/server/session';
 import { getSiteConfig } from '@/lib/server/site';
+import { MailSettingsForm } from './mail-form';
 import { SettingsForm } from './settings-form';
 import { UsageSettingsForm } from './usage-form';
 
@@ -25,12 +26,34 @@ export default async function AdminSettingsPage({ params }: PageProps) {
   const tUsage = await getTranslations('Admin.usageSettings');
   const site = await getSiteConfig();
   const mode = (await getSetting(db(), 'auth.registrationMode')) ?? 'closed';
+  const tMail = await getTranslations('Admin.mailSettings');
+  const smtp = await getSetting(db(), 'mail.smtp');
   return (
     <section aria-labelledby="settings-title" className="max-w-2xl space-y-6">
       <h1 id="settings-title" className="text-3xl font-bold">
         {t('title')}
       </h1>
       <SettingsForm siteName={site.name} registrationMode={mode} smtpEnabled={site.smtpEnabled} />
+      <section
+        aria-labelledby="mail-settings-title"
+        className="space-y-4 border-t border-border pt-6"
+      >
+        <h2 id="mail-settings-title" className="text-2xl font-bold">
+          {tMail('title')}
+        </h2>
+        <MailSettingsForm
+          values={{
+            enabled: smtp?.enabled ?? false,
+            host: smtp?.host ?? '',
+            port: smtp?.port ?? 587,
+            security: smtp?.security ?? 'starttls',
+            user: smtp?.user ?? '',
+            hasPassword: Boolean(smtp?.passwordEncrypted),
+            fromEmail: smtp?.fromEmail ?? '',
+            fromName: smtp?.fromName ?? site.name,
+          }}
+        />
+      </section>
       <section
         aria-labelledby="usage-settings-title"
         className="space-y-4 border-t border-border pt-6"

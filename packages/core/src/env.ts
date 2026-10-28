@@ -21,6 +21,10 @@ const serverEnvSchema = z.object({
   CLAMAV_HOST: z.string().optional().default(''),
   CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
   RUN_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(4),
+  /** License token to use when none was entered in the admin area. */
+  LICENSE_KEY: z.string().max(4096).optional().default(''),
+  /** Optional vendor license server; when set, the license is re-checked daily. */
+  LICENSE_SERVER_URL: z.union([z.literal(''), z.url({ protocol: /^https?$/ })]).default(''),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

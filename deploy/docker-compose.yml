@@ -89,6 +89,9 @@ services:
   web:
     <<: *app
     image: ${RENTAGENT_IMAGE_PREFIX:-ghcr.io/diamondrubinny/rentagent}-web:${RENTAGENT_VERSION:-latest}
+    # Each instance renders on one CPU core; add instances on larger servers (see REQUIREMENTS.md).
+    deploy:
+      replicas: ${WEB_REPLICAS:-1}
     tmpfs: ['/tmp', '/app/apps/web/.next/cache:uid=1000,gid=1000']
     volumes:
       - files:/data/files

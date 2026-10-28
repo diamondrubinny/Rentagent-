@@ -70,7 +70,7 @@
     "baseCurrencyHint": "ISO 4217 code, for example USD, EUR or ILS. Prices in other currencies can be added later.",
     "sectionLicense": "License",
     "licenseKey": "License key",
-    "licenseKeyHint": "Optional for now. It can be added later.",
+    "licenseKeyHint": "Optional. It can also be added later under Admin › License.",
     "sectionMail": "Outgoing email (SMTP)",
     "mailIntro": "Used for email verification, password resets and notifications. Recommended.",
     "smtpEnabled": "Configure SMTP now",
@@ -141,7 +141,9 @@
     "hostPlaceholder": "Placeholders are not allowed in the host name — only in the path or query.",
     "invalidJson": "This is not valid JSON.",
     "schemaObject": "The schema must be a JSON Schema with \"type\": \"object\".",
-    "invalidHeaders": "Use one \"Header-Name: value\" per line."
+    "invalidHeaders": "Use one \"Header-Name: value\" per line.",
+    "invalidPhone": "Use digits, spaces and + ( ) - only.",
+    "invalidLicense": "This license key is not valid for this software."
   },
   "Errors": {
     "notFoundTitle": "Page not found",
@@ -157,9 +159,7 @@
     "termsTitle": "Terms of use",
     "cookiesTitle": "Cookie policy",
     "accessibilityTitle": "Accessibility statement",
-    "draftNotice": "This page is a draft template. The operator of {siteName} must complete it and have it reviewed by a qualified professional before publication.",
-    "cookiesEssentialOnly": "This site currently uses only essential cookies: session, security (CSRF), language preference and your cookie choices. They are required for the site to work and do not track you.",
-    "accessibilityCommitment": "{siteName} aims to meet WCAG 2.1 level AA. If you encounter an accessibility barrier, please contact the site operator."
+    "draftNotice": "This page is a draft template. The operator of {siteName} must complete it and have it reviewed by a qualified professional before publication."
   },
   "Consent": {
     "dialogTitle": "Privacy and cookie settings",
@@ -429,7 +429,9 @@
       "notFound": "The user no longer exists.",
       "lastOwner": "The installation must keep at least one active owner.",
       "smtpRequired": "Configure outgoing email before opening registration.",
-      "generic": "Something went wrong. Please try again."
+      "generic": "Something went wrong. Please try again.",
+      "smtpFailed": "The SMTP server could not be reached with these settings.",
+      "smtpInUse": "Close registration before turning off outgoing email."
     },
     "usageSettings": {
       "title": "Agents and privacy",
@@ -442,6 +444,17 @@
       "saving": "Saving…",
       "save": "Save",
       "saved": "Settings saved."
+    },
+    "mailSettings": {
+      "title": "Outgoing email (SMTP)",
+      "enabled": "Send email",
+      "host": "SMTP host",
+      "fromEmail": "Sender email",
+      "passwordKeep": "Leave empty to keep the saved password. It must be entered again when the server, security or username changes.",
+      "testHint": "The connection is tested before saving.",
+      "saving": "Testing and saving…",
+      "save": "Save",
+      "saved": "Email settings saved."
     }
   },
   "AdminAi": {
@@ -1435,8 +1448,11 @@
     "feature_feedbackHint": "Users can mark answers as helpful or not and leave a comment.",
     "feature_semanticSearch": "Meaning-based catalog search",
     "feature_semanticSearchHint": "Suggests related agents across languages; uses your embedding model (billed per search).",
+    "feature_a11yWidget": "Accessibility menu",
+    "feature_a11yWidgetHint": "Shows a button with text size, contrast, link highlighting, readable font and animation controls. It complements, and does not replace, the accessible design.",
     "feature_hidePoweredBy": "Hide “Powered by RentAgent”",
     "feature_hidePoweredByHint": "Removes the line from the footer.",
+    "needsWhiteLabel": "Needs a license with white-labelling; until then the line stays visible.",
     "textsHint": "Home page texts and every other wording can be changed under Languages.",
     "saving": "Saving…",
     "save": "Save",
@@ -1502,5 +1518,136 @@
     "welcome": "New accounts get {amount} in credits to try the agents.",
     "packs": "Credit packs",
     "cta": "Get credits"
+  },
+  "A11y": {
+    "button": "Accessibility",
+    "title": "Accessibility settings",
+    "intro": "Adjust how this site looks on this device. Your choices are saved only in this browser.",
+    "textSize": "Text size",
+    "contrast": "High contrast",
+    "links": "Highlight links",
+    "font": "Readable font and spacing",
+    "motion": "Stop animations",
+    "applied": "Settings applied.",
+    "reset": "Reset",
+    "close": "Close",
+    "statement": "Accessibility statement"
+  },
+  "AdminLegal": {
+    "title": "Legal pages",
+    "intro": "The privacy policy, terms of use, cookie policy and accessibility statement are drafted automatically from this installation: active AI providers, payment gateways, retention period, webhooks and the cookies actually used. Fill in your details below, or replace any document with your own text.",
+    "professionalNotice": "These documents are drafts, not legal advice. Have them reviewed by a lawyer, privacy officer or accessibility consultant before publication. A draft notice is shown on each page until you confirm it was reviewed.",
+    "details": "Operator details",
+    "detailsHint": "Shown in the documents as plain text. Empty fields appear as a placeholder for you to complete.",
+    "field_company": "Legal name of the business",
+    "field_address": "Business address",
+    "field_country": "Country (governing law)",
+    "field_contactEmail": "Contact email",
+    "field_privacyEmail": "Privacy email",
+    "field_privacyEmailHint": "For data requests. Leave empty to use the contact email.",
+    "field_dpoName": "Privacy officer / DPO (if appointed)",
+    "field_accessibilityName": "Accessibility coordinator",
+    "field_accessibilityEmail": "Accessibility email",
+    "field_accessibilityEmailHint": "Leave empty to use the contact email.",
+    "field_accessibilityPhone": "Accessibility phone (optional)",
+    "field_accessibilityResponseDays": "Response time for accessibility requests (days)",
+    "customText": "Own text in {language}",
+    "customInUse": "in use",
+    "customLabel": "Document text in {language} (Markdown)",
+    "customHint": "Replaces the draft for this language. Leave empty to use the automatic draft. HTML is not displayed.",
+    "reviewed": "Reviewed by a qualified professional",
+    "reviewedHint": "Removes the draft notice from this page. Confirm only after a professional has checked the final text.",
+    "statusReviewed": "Reviewed",
+    "statusDraft": "Draft",
+    "view": "View {page}",
+    "saving": "Saving…",
+    "save": "Save",
+    "saved": "Saved.",
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "invalid": "Some values are invalid."
+    }
+  },
+  "AdminLicense": {
+    "title": "License",
+    "intro": "A license unlocks white-labelling and vendor support. Without one, everything keeps working and the “Powered by” line stays visible. Users are never blocked.",
+    "noKeys": "This build contains no vendor public key, so licenses cannot be verified yet. See docs/LICENSING.md.",
+    "current": "Current license",
+    "status": "Status",
+    "licensee": "Licensed to",
+    "tier": "Edition",
+    "domains": "Domains",
+    "expires": "Valid until",
+    "noExpiry": "No end date",
+    "users": "Users",
+    "usersOf": "{count} of {max}",
+    "usersUnlimited": "{count} (no limit)",
+    "whiteLabel": "White-labelling",
+    "thisDomain": "This installation",
+    "source": "Entered via",
+    "sourceEnv": "LICENSE_KEY environment variable",
+    "sourceAdmin": "This page",
+    "onlineCheck": "Online check",
+    "onlineCheckOff": "Off (offline license)",
+    "onlineCheckState": "Last confirmed: {success}. Last attempt: {attempt}.",
+    "never": "never",
+    "yes": "Yes",
+    "no": "No",
+    "statuses": {
+      "none": "No license (free edition)",
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "expired": "Expired",
+      "not_yet_valid": "Not yet valid",
+      "domain_mismatch": "Issued for another domain",
+      "revoked": "Revoked or unknown to the vendor",
+      "unverified": "Could not be confirmed"
+    },
+    "tiers": {
+      "standard": "Standard",
+      "pro": "Pro",
+      "enterprise": "Enterprise"
+    },
+    "help": {
+      "invalid": "The stored license cannot be verified. Enter the license again or contact the vendor.",
+      "expired": "Renew the license with the vendor, then enter the new one below.",
+      "not_yet_valid": "The license starts later. Check the server clock if this is unexpected.",
+      "domain_mismatch": "The license does not cover this installation’s domain. Ask the vendor to add it.",
+      "revoked": "The vendor’s license server does not confirm this license. Contact the vendor.",
+      "unverified": "The license server could not be reached for more than 14 days. Check the outgoing connection, then use “Check now”."
+    },
+    "grace": "The license server cannot be reached; {days, plural, one {# day} other {# days}} left before the license counts as unconfirmed.",
+    "overUsers": "More users than the license allows. Nothing is blocked; please upgrade the license.",
+    "activateTitle": "Enter a license",
+    "replaceTitle": "Replace the license",
+    "tokenLabel": "License key",
+    "tokenHint": "Paste the key you received from the vendor (starts with RA1.).",
+    "activate": "Activate",
+    "activating": "Checking…",
+    "activated": "License saved.",
+    "checkNow": "Check now",
+    "remove": "Remove license",
+    "removeConfirm": "Remove the license? White-labelling will be turned off.",
+    "removeYes": "Yes, remove",
+    "cancel": "Cancel",
+    "done": "Done.",
+    "privacyNote": "The online check, if configured, sends only the license id, this domain and the software version — never data about users.",
+    "banner": {
+      "invalid": "The license cannot be verified.",
+      "expired": "The license has expired.",
+      "not_yet_valid": "The license is not yet valid.",
+      "domain_mismatch": "The license is for a different domain.",
+      "revoked": "The vendor does not confirm the license.",
+      "unverified": "The license could not be confirmed for over 14 days.",
+      "overUsers": "More users than the license allows.",
+      "grace": "The license server cannot be reached ({days, plural, one {# day} other {# days}} of grace left).",
+      "open": "License settings"
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "malformed": "This is not a valid license key.",
+      "signature": "This license key was not issued by the vendor of this software.",
+      "checkFailed": "The license server could not be reached or gave no valid answer."
+    }
   }
 }

@@ -6,7 +6,8 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 
 - Product plan and roadmap: [`PLAN.md`](PLAN.md) (Hebrew)
 - Server requirements for customers: [`deploy/REQUIREMENTS.md`](deploy/REQUIREMENTS.md)
-- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md), [`docs/phase-5-5.md`](docs/phase-5-5.md), [`docs/phase-6.md`](docs/phase-6.md)
+- Operator guide: [`docs/OPERATOR.md`](docs/OPERATOR.md) · Production checklist: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · Licensing (vendor): [`docs/LICENSING.md`](docs/LICENSING.md)
+- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md), [`docs/phase-5-5.md`](docs/phase-5-5.md), [`docs/phase-6.md`](docs/phase-6.md), [`docs/phase-7.md`](docs/phase-7.md)
 
 ## Status
 
@@ -31,21 +32,30 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
   holds; Stripe and PayPal top-ups; Stripe subscriptions with plans and the customer portal;
   branding with contrast-checked colors, logo and favicon; feature switches; signed outgoing
   webhooks; public pricing page.
-- Next: licensing, compliance and launch (7).
+- Phase 7 (licensing, compliance, launch): accessibility menu; privacy policy, terms, cookie policy
+  and accessibility statement drafted from the installation's real configuration (4 languages,
+  operator overrides, "reviewed" sign-off); Ed25519 license keys verified offline with an optional
+  daily online check, white-label gating and a vendor license server + CLI; SMTP settings after
+  setup; retention of operational records; operator guide, production checklist, load test, SBOM
+  and dependency license policy in CI.
 
 ## Repository layout
 
 ```
 apps/web        Next.js app (UI + API), next-intl, Tailwind
 apps/worker     Background worker (BullMQ), bundled into one file
+apps/license-server  Vendor-only license server and `license-admin` CLI (not part of an installation)
 packages/core   Server utilities: env validation, AES-256-GCM secrets, logger, Redis, rate limit
 packages/db     Prisma 7 schema, migrations, typed settings
 packages/mail   Transactional email templates (all locales) and SMTP transport
 packages/ai-gateway  AI providers (Vercel AI SDK), discovery, routing/fallback, metering, SSRF guard
 packages/agent-runtime  Agent loop, tools (built-in, HTTP, MCP), file checks, text extraction, templates
 packages/shared Isomorphic code: locales/RTL, money (ISO 4217 minor units), Zod schemas
+packages/billing  Credit wallets, ledger, Stripe and PayPal
+packages/webhooks Signed outgoing webhooks
+packages/license  License token verification (Ed25519), online check protocol, vendor signing
 deploy/         Docker Compose stack, Caddy, installer, `rentagent` CLI, requirements
-scripts/        Release packaging
+scripts/        Release packaging, SBOM and dependency license policy
 ```
 
 ## Development

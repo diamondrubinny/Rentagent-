@@ -187,6 +187,10 @@ SETUP_TOKEN=${setup_token}
 FILES_DIR=/data/files
 LOG_LEVEL=info
 NEXT_TELEMETRY_DISABLED=1
+
+# Optional: license key (can also be entered under Admin › License) and vendor license server.
+LICENSE_KEY=
+LICENSE_SERVER_URL=
 ENV
 chmod 600 "$RENTAGENT_HOME/.env"
 ok "Configuration written to $RENTAGENT_HOME/.env (mode 600)"

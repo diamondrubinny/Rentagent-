@@ -45,7 +45,12 @@ export const setupSchema = z
       .string()
       .transform((value) => value.trim())
       .refine(isValidTimeZone, { error: 'invalidTimeZone' }),
-    licenseKey: optionalSingleLine(200),
+    // License tokens are long; whitespace from copy-paste is removed. Verified on the server.
+    licenseKey: z
+      .string()
+      .optional()
+      .transform((value) => (value ?? '').replace(/\s+/g, ''))
+      .pipe(z.string().max(4096, { error: 'tooLong' })),
     smtpEnabled: checkbox,
     smtpHost: optionalSingleLine(253),
     smtpPort: z

@@ -1,8 +1,24 @@
 import { can } from '@rentagent/shared';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { ClientMessages } from '@/components/client-messages';
 import { Link } from '@/i18n/navigation';
+import { getLicenseState } from '@/lib/server/license';
 import { requirePermission } from '@/lib/server/session';
+
+const ADMIN_NAMESPACES = [
+  'Admin',
+  'AdminAgents',
+  'AdminAi',
+  'AdminBilling',
+  'AdminBranding',
+  'AdminLanguages',
+  'AdminLegal',
+  'AdminLicense',
+  'AdminTools',
+  'AdminWebhooks',
+  'Setup',
+];
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -20,6 +36,17 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
   const tBilling = await getTranslations('AdminBilling');
   const tBranding = await getTranslations('AdminBranding');
   const tWebhooks = await getTranslations('AdminWebhooks');
+  const tLegal = await getTranslations('AdminLegal');
+  const tLicense = await getTranslations('AdminLicense');
+  const license = await getLicenseState();
+  const licenseProblem =
+    license.status !== 'valid' && license.status !== 'none'
+      ? tLicense(`banner.${license.status}`)
+      : license.overUserLimit
+        ? tLicense('banner.overUsers')
+        : license.graceDaysLeft !== null
+          ? tLicense('banner.grace', { days: license.graceDaysLeft })
+          : null;
   const links = [
     { href: '/admin', label: t('overview.title'), show: true },
     { href: '/admin/users', label: t('users.title'), show: can(user.role, 'users.read') },
@@ -40,6 +67,16 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
     {
       href: '/admin/webhooks',
       label: tWebhooks('title'),
+      show: can(user.role, 'settings.manage'),
+    },
+    {
+      href: '/admin/legal',
+      label: tLegal('title'),
+      show: can(user.role, 'settings.manage'),
+    },
+    {
+      href: '/admin/license',
+      label: tLicense('title'),
       show: can(user.role, 'settings.manage'),
     },
     {
@@ -85,7 +122,17 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
             ))}
         </ul>
       </nav>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0">
+        {licenseProblem && can(user.role, 'settings.manage') && (
+          <p role="note" className="mb-6 rounded-lg border border-border bg-warning-bg p-4">
+            {licenseProblem}{' '}
+            <Link className="link" href="/admin/license">
+              {tLicense('banner.open')}
+            </Link>
+          </p>
+        )}
+        <ClientMessages namespaces={ADMIN_NAMESPACES}>{children}</ClientMessages>
+      </div>
     </div>
   );
 }

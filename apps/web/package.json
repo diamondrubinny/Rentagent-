@@ -17,6 +17,7 @@
     "@rentagent/billing": "workspace:*",
     "@rentagent/core": "workspace:*",
     "@rentagent/db": "workspace:*",
+    "@rentagent/license": "workspace:*",
     "@rentagent/mail": "workspace:*",
     "@rentagent/shared": "workspace:*",
     "@rentagent/webhooks": "workspace:*",

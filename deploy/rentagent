@@ -18,13 +18,15 @@ env_set() { # env_set KEY VALUE  (VALUE must not contain '|')
 }
 dc() { docker compose "$@"; }
 
-wait_healthy() { # wait_healthy [timeout_seconds]
-  local timeout=${1:-180} waited=0 id status
+wait_healthy() { # wait_healthy [timeout_seconds] — every web instance (WEB_REPLICAS) must be healthy
+  local timeout=${1:-180} waited=0 ids total healthy
   while (( waited < timeout )); do
-    id=$(dc ps -q web 2>/dev/null || true)
-    if [[ -n "$id" ]]; then
-      status=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$id" 2>/dev/null || echo unknown)
-      [[ "$status" == "healthy" ]] && { ok "Web service is healthy"; return 0; }
+    ids=$(dc ps -q web 2>/dev/null || true)
+    if [[ -n "$ids" ]]; then
+      total=$(wc -l <<< "$ids")
+      # shellcheck disable=SC2086 # one argument per container id
+      healthy=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' $ids 2>/dev/null | grep -c '^healthy$' || true)
+      (( healthy == total )) && { ok "Web service is healthy ($total instance(s))"; return 0; }
     fi
     sleep 5; waited=$((waited + 5))
   done
@@ -34,7 +36,7 @@ wait_healthy() { # wait_healthy [timeout_seconds]
 cmd_status() {
   info "Version: $(env_get RENTAGENT_VERSION)"
   dc ps
-  local id; id=$(dc ps -q web)
+  local id; id=$(dc ps -q web | head -1)
   [[ -n "$id" ]] && docker exec "$id" node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>r.text()).then(t=>console.log('Health:', t)).catch(e=>{console.error('Health check failed:', e.message);process.exit(1)})"
   info ""; df -h "$RENTAGENT_HOME" | tail -1 | awk '{print "Disk: " $4 " free of " $2}'
 }

@@ -3,6 +3,7 @@
 #   docker build -f deploy/docker/Dockerfile --target web .
 #   docker build -f deploy/docker/Dockerfile --target worker .
 #   docker build -f deploy/docker/Dockerfile --target migrate .
+#   docker build -f deploy/docker/Dockerfile --target license-server .   (vendor only)
 
 ARG NODE_IMAGE=node:22-bookworm-slim
 
@@ -20,6 +21,7 @@ WORKDIR /repo
 # --- Dependencies (cached unless a manifest or the lockfile changes) ---
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/license-server/package.json apps/license-server/
 COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 COPY packages/agent-runtime/package.json packages/agent-runtime/
@@ -27,6 +29,7 @@ COPY packages/ai-gateway/package.json packages/ai-gateway/
 COPY packages/billing/package.json packages/billing/
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
+COPY packages/license/package.json packages/license/
 COPY packages/mail/package.json packages/mail/
 COPY packages/shared/package.json packages/shared/
 COPY packages/webhooks/package.json packages/webhooks/
@@ -67,6 +70,8 @@ WORKDIR /app
 # Application code stays root-owned (read-only for the runtime user).
 COPY --from=build /repo/apps/web/.next/standalone ./
 COPY --from=build /repo/apps/web/.next/static ./apps/web/.next/static
+# Draft templates for the legal pages (read at runtime, filled from settings).
+COPY --from=build /repo/apps/web/legal ./apps/web/legal
 RUN mkdir -p /data/files apps/web/.next/cache && chown node:node /data/files apps/web/.next/cache
 USER node
 EXPOSE 3000
@@ -84,3 +89,21 @@ COPY --from=build /repo/apps/worker/dist ./
 RUN mkdir -p /data/files && chown node:node /data/files
 USER node
 CMD ["node", "--enable-source-maps", "index.js"]
+
+# --- Vendor license server (not part of an installation) ---
+FROM deps AS license-build
+COPY . .
+RUN pnpm --filter @rentagent/license-server build
+
+FROM ${NODE_IMAGE} AS license-server
+ENV NODE_ENV=production \
+    PORT=8080 \
+    LICENSE_DATA_FILE=/data/licenses.json
+WORKDIR /app
+COPY --from=license-build /repo/apps/license-server/dist ./
+RUN mkdir -p /data && chown node:node /data
+USER node
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+CMD ["node", "--enable-source-maps", "server.js"]

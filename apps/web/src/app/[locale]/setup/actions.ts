@@ -8,6 +8,7 @@ import {
   getTextDirection,
   setupSchema,
 } from '@rentagent/shared';
+import { decodeLicense, VENDOR_PUBLIC_KEYS } from '@rentagent/license';
 import { hashPassword } from 'better-auth/crypto';
 import { audit } from '@/lib/server/audit';
 import { resetAuth } from '@/lib/server/auth';
@@ -68,6 +69,9 @@ export async function completeSetup(
     return fail(undefined, { token: 'invalidToken' });
   }
 
+  if (data.licenseKey && !decodeLicense(data.licenseKey, VENDOR_PUBLIC_KEYS).ok)
+    return fail(undefined, { licenseKey: 'invalidLicense' });
+
   if (data.smtpEnabled) {
     const reachable = await verifySmtp({
       host: data.smtpHost,
@@ -121,8 +125,12 @@ export async function completeSetup(
       if (data.licenseKey) {
         await tx.setting.upsert(
           settingUpsert(
-            'license.key',
-            encryptSecret(data.licenseKey, 'setting:license.key', keyring),
+            'license',
+            {
+              token: data.licenseKey,
+              activatedAt: new Date().toISOString(),
+              check: { lastAttemptAt: null, lastSuccessAt: null, status: null },
+            },
             'setup',
           ),
         );

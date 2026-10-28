@@ -78,6 +78,7 @@ model AuditLog {
 
   @@index([action, createdAt])
   @@index([actorId, createdAt])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -90,6 +91,7 @@ model ConsentRecord {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([anonId])
+  @@index([createdAt])
   @@map("consent_records")
 }
 

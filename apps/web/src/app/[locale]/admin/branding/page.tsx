@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { getBranding, imageVersion } from '@/lib/server/branding';
+import { whiteLabelAllowed } from '@/lib/server/license';
 import { requirePermission } from '@/lib/server/session';
 import { ColorsForm, FeaturesForm, ImageForm } from './branding-forms';
 
@@ -65,7 +66,9 @@ export default async function BrandingPage({ params }: PageProps) {
         <FeaturesForm
           feedback={features.feedback}
           semanticSearch={features.semanticSearch}
+          a11yWidget={features.a11yWidget}
           hidePoweredBy={branding.hidePoweredBy}
+          whiteLabel={await whiteLabelAllowed()}
         />
       </section>
       <p className="text-sm text-muted">{t('textsHint')}</p>
