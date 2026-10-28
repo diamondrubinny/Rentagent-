@@ -1,0 +1,122 @@
+{
+  "Metadata": {
+    "description": "Rent ready-made AI agents that get work done for you."
+  },
+  "Common": {
+    "skipToContent": "Skip to main content",
+    "close": "Close",
+    "draft": "Draft"
+  },
+  "Header": {
+    "mainNav": "Main",
+    "home": "Home"
+  },
+  "Footer": {
+    "legalNav": "Legal and accessibility",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "cookies": "Cookie policy",
+    "accessibility": "Accessibility statement",
+    "privacySettings": "Privacy and cookie settings",
+    "languages": "Languages",
+    "rights": "© {year} {siteName}"
+  },
+  "Home": {
+    "title": "AI agents that work for you",
+    "subtitle": "Choose an agent, describe the task, approve sensitive steps, and get the result.",
+    "notConfiguredTitle": "This installation is not configured yet",
+    "notConfiguredBody": "The administrator needs to complete the initial setup before the platform can be used.",
+    "goToSetup": "Go to initial setup",
+    "setupDone": "Initial setup completed successfully.",
+    "comingSoon": "The agent catalog will be available soon."
+  },
+  "Setup": {
+    "metaTitle": "Initial setup",
+    "title": "Initial setup",
+    "intro": "Configure the basic settings of this installation. You can change everything later in the admin panel.",
+    "requiredNote": "Fields marked with * are required.",
+    "sectionAccess": "Installation token",
+    "token": "Setup token *",
+    "tokenHint": "Printed by the installer in the server terminal. Run \"rentagent setup-token\" to display it again.",
+    "sectionSite": "Site",
+    "siteName": "Site name *",
+    "siteNameHint": "Shown to your users in the header, emails and browser tab.",
+    "defaultLocale": "Default language *",
+    "timeZone": "Time zone *",
+    "timeZoneHint": "IANA name, for example Asia/Jerusalem, Europe/Berlin or America/New_York.",
+    "baseCurrency": "Base currency *",
+    "baseCurrencyHint": "ISO 4217 code, for example USD, EUR or ILS. Prices in other currencies can be added later.",
+    "sectionLicense": "License",
+    "licenseKey": "License key",
+    "licenseKeyHint": "Optional for now. It can be added later.",
+    "sectionMail": "Outgoing email (SMTP)",
+    "mailIntro": "Used for email verification, password resets and notifications. Recommended.",
+    "smtpEnabled": "Configure SMTP now",
+    "smtpHost": "SMTP host *",
+    "smtpPort": "Port",
+    "smtpSecurity": "Connection security",
+    "smtpSecurityTls": "TLS (usually port 465)",
+    "smtpSecurityStarttls": "STARTTLS (usually port 587)",
+    "smtpSecurityNone": "None (not recommended)",
+    "smtpUser": "Username",
+    "smtpPassword": "Password",
+    "smtpPasswordHint": "Stored encrypted. It is never shown again.",
+    "smtpFromEmail": "Sender email *",
+    "smtpFromName": "Sender name",
+    "submit": "Complete setup",
+    "submitting": "Saving…",
+    "errorSummary": "Please correct the following:",
+    "errors": {
+      "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+      "alreadyComplete": "Setup has already been completed.",
+      "smtpFailed": "Could not connect to the SMTP server. Check the details, or uncheck SMTP to configure it later.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "Validation": {
+    "required": "This field is required.",
+    "tooLong": "This value is too long.",
+    "invalidOption": "Choose one of the available options.",
+    "invalidCurrency": "Enter a valid ISO 4217 currency code, for example USD.",
+    "invalidTimeZone": "Enter a valid IANA time zone, for example Europe/London.",
+    "invalidPort": "Enter a port number between 1 and 65535.",
+    "invalidEmail": "Enter a valid email address.",
+    "invalidToken": "The setup token is incorrect."
+  },
+  "Errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist or has moved.",
+    "errorTitle": "Something went wrong",
+    "errorBody": "An unexpected error occurred. Please try again.",
+    "retry": "Try again",
+    "backHome": "Back to the home page",
+    "reference": "Reference: {digest}"
+  },
+  "Legal": {
+    "privacyTitle": "Privacy policy",
+    "termsTitle": "Terms of use",
+    "cookiesTitle": "Cookie policy",
+    "accessibilityTitle": "Accessibility statement",
+    "draftNotice": "This page is a draft template. The operator of {siteName} must complete it and have it reviewed by a qualified professional before publication.",
+    "cookiesEssentialOnly": "This site currently uses only essential cookies: session, security (CSRF), language preference and your cookie choices. They are required for the site to work and do not track you.",
+    "accessibilityCommitment": "{siteName} aims to meet WCAG 2.1 level AA. If you encounter an accessibility barrier, please contact the site operator."
+  },
+  "Consent": {
+    "dialogTitle": "Privacy and cookie settings",
+    "intro": "Choose which optional cookies you allow. Essential cookies are always active because the site cannot work without them.",
+    "essentialTitle": "Essential",
+    "essentialBody": "Session, security, language and consent preferences.",
+    "analyticsTitle": "Analytics",
+    "analyticsBody": "Helps the operator understand how the site is used.",
+    "marketingTitle": "Marketing",
+    "marketingBody": "Used to show relevant advertising.",
+    "alwaysOn": "Always active",
+    "notInUse": "Not currently in use on this site",
+    "acceptAll": "Accept all",
+    "rejectAll": "Reject all",
+    "manage": "Manage preferences",
+    "save": "Save my choices",
+    "saved": "Your choices have been saved.",
+    "bannerText": "We use essential cookies to run this site and, with your permission, optional cookies for analytics and marketing."
+  }
+}

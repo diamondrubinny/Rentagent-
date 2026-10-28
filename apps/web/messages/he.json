@@ -1,0 +1,122 @@
+{
+  "Metadata": {
+    "description": "שכרו סוכני AI מוכנים שמבצעים עבורכם עבודה."
+  },
+  "Common": {
+    "skipToContent": "דילוג לתוכן הראשי",
+    "close": "סגירה",
+    "draft": "טיוטה"
+  },
+  "Header": {
+    "mainNav": "ראשי",
+    "home": "דף הבית"
+  },
+  "Footer": {
+    "legalNav": "מידע משפטי ונגישות",
+    "privacy": "מדיניות פרטיות",
+    "terms": "תנאי שימוש",
+    "cookies": "מדיניות עוגיות",
+    "accessibility": "הצהרת נגישות",
+    "privacySettings": "הגדרות פרטיות ועוגיות",
+    "languages": "שפות",
+    "rights": "© {year} {siteName}"
+  },
+  "Home": {
+    "title": "סוכני AI שעובדים בשבילכם",
+    "subtitle": "בוחרים סוכן, מתארים את המשימה, מאשרים שלבים רגישים ומקבלים תוצאה.",
+    "notConfiguredTitle": "ההתקנה עדיין לא הוגדרה",
+    "notConfiguredBody": "מנהל המערכת צריך להשלים את ההגדרה הראשונית לפני שאפשר להשתמש בפלטפורמה.",
+    "goToSetup": "מעבר להגדרה הראשונית",
+    "setupDone": "ההגדרה הראשונית הושלמה בהצלחה.",
+    "comingSoon": "קטלוג הסוכנים יהיה זמין בקרוב."
+  },
+  "Setup": {
+    "metaTitle": "הגדרה ראשונית",
+    "title": "הגדרה ראשונית",
+    "intro": "הגדירו את ההגדרות הבסיסיות של ההתקנה. אפשר לשנות הכל אחר כך בלוח הניהול.",
+    "requiredNote": "שדות המסומנים ב־* הם שדות חובה.",
+    "sectionAccess": "טוקן התקנה",
+    "token": "טוקן הגדרה *",
+    "tokenHint": "הודפס על ידי המתקין בטרמינל של השרת. הריצו \"rentagent setup-token\" כדי להציג אותו שוב.",
+    "sectionSite": "האתר",
+    "siteName": "שם האתר *",
+    "siteNameHint": "מוצג למשתמשים בכותרת, במיילים ובלשונית הדפדפן.",
+    "defaultLocale": "שפת ברירת מחדל *",
+    "timeZone": "אזור זמן *",
+    "timeZoneHint": "שם IANA, לדוגמה Asia/Jerusalem, ‏Europe/Berlin או America/New_York.",
+    "baseCurrency": "מטבע בסיס *",
+    "baseCurrencyHint": "קוד ISO 4217, לדוגמה USD, ‏EUR או ILS. אפשר להוסיף מחירים במטבעות נוספים בהמשך.",
+    "sectionLicense": "רישיון",
+    "licenseKey": "מפתח רישיון",
+    "licenseKeyHint": "לא חובה כרגע. אפשר להוסיף אותו מאוחר יותר.",
+    "sectionMail": "דואר יוצא (SMTP)",
+    "mailIntro": "משמש לאימות מייל, איפוס סיסמה והתראות. מומלץ.",
+    "smtpEnabled": "להגדיר SMTP עכשיו",
+    "smtpHost": "שרת SMTP *",
+    "smtpPort": "פורט",
+    "smtpSecurity": "אבטחת חיבור",
+    "smtpSecurityTls": "TLS (בדרך כלל פורט 465)",
+    "smtpSecurityStarttls": "STARTTLS (בדרך כלל פורט 587)",
+    "smtpSecurityNone": "ללא (לא מומלץ)",
+    "smtpUser": "שם משתמש",
+    "smtpPassword": "סיסמה",
+    "smtpPasswordHint": "נשמרת מוצפנת ולא תוצג שוב.",
+    "smtpFromEmail": "כתובת השולח *",
+    "smtpFromName": "שם השולח",
+    "submit": "סיום ההגדרה",
+    "submitting": "שומר…",
+    "errorSummary": "נא לתקן את הפריטים הבאים:",
+    "errors": {
+      "rateLimited": "יותר מדי ניסיונות. נא להמתין כמה דקות ולנסות שוב.",
+      "alreadyComplete": "ההגדרה כבר הושלמה.",
+      "smtpFailed": "לא הצלחנו להתחבר לשרת ה־SMTP. בדקו את הפרטים, או בטלו את סימון ה־SMTP כדי להגדיר אותו מאוחר יותר.",
+      "generic": "משהו השתבש. נא לנסות שוב."
+    }
+  },
+  "Validation": {
+    "required": "זהו שדה חובה.",
+    "tooLong": "הערך ארוך מדי.",
+    "invalidOption": "יש לבחור אחת מהאפשרויות.",
+    "invalidCurrency": "יש להזין קוד מטבע ISO 4217 תקין, לדוגמה USD.",
+    "invalidTimeZone": "יש להזין אזור זמן IANA תקין, לדוגמה Asia/Jerusalem.",
+    "invalidPort": "יש להזין מספר פורט בין 1 ל־65535.",
+    "invalidEmail": "יש להזין כתובת מייל תקינה.",
+    "invalidToken": "טוקן ההגדרה שגוי."
+  },
+  "Errors": {
+    "notFoundTitle": "הדף לא נמצא",
+    "notFoundBody": "הדף שחיפשתם לא קיים או שהועבר.",
+    "errorTitle": "משהו השתבש",
+    "errorBody": "אירעה שגיאה לא צפויה. נא לנסות שוב.",
+    "retry": "ניסיון חוזר",
+    "backHome": "חזרה לדף הבית",
+    "reference": "מזהה: {digest}"
+  },
+  "Legal": {
+    "privacyTitle": "מדיניות פרטיות",
+    "termsTitle": "תנאי שימוש",
+    "cookiesTitle": "מדיניות עוגיות",
+    "accessibilityTitle": "הצהרת נגישות",
+    "draftNotice": "דף זה הוא תבנית טיוטה. המפעיל של {siteName} חייב להשלים אותו ולהעביר אותו לבדיקה מקצועית לפני פרסום.",
+    "cookiesEssentialOnly": "האתר משתמש כרגע בעוגיות חיוניות בלבד: התחברות, אבטחה (CSRF), העדפת שפה ובחירות העוגיות שלכם. הן נדרשות לפעולת האתר ואינן עוקבות אחריכם.",
+    "accessibilityCommitment": "{siteName} שואף לעמוד ב־WCAG 2.1 ברמה AA ובתקן הישראלי 5568. אם נתקלתם בחסם נגישות, נא לפנות למפעיל האתר."
+  },
+  "Consent": {
+    "dialogTitle": "הגדרות פרטיות ועוגיות",
+    "intro": "בחרו אילו עוגיות אופציונליות לאפשר. עוגיות חיוניות פעילות תמיד, כי האתר לא יכול לפעול בלעדיהן.",
+    "essentialTitle": "חיוניות",
+    "essentialBody": "התחברות, אבטחה, שפה והעדפות הסכמה.",
+    "analyticsTitle": "אנליטיקה",
+    "analyticsBody": "עוזרות למפעיל להבין איך משתמשים באתר.",
+    "marketingTitle": "שיווק",
+    "marketingBody": "משמשות להצגת פרסום רלוונטי.",
+    "alwaysOn": "פעילות תמיד",
+    "notInUse": "לא בשימוש באתר כרגע",
+    "acceptAll": "אישור הכל",
+    "rejectAll": "דחיית הכל",
+    "manage": "ניהול העדפות",
+    "save": "שמירת הבחירות שלי",
+    "saved": "הבחירות שלכם נשמרו.",
+    "bannerText": "אנחנו משתמשים בעוגיות חיוניות להפעלת האתר, ובאישורכם גם בעוגיות אופציונליות לאנליטיקה ולשיווק."
+  }
+}

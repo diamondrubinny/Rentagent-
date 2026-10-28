@@ -1,0 +1,20 @@
+# Development dependencies only (database and cache). Run the apps with `pnpm dev`.
+name: rentagent-dev
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: rentagent
+      POSTGRES_PASSWORD: rentagent
+      POSTGRES_DB: rentagent
+    ports: ['127.0.0.1:5432:5432']
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--requirepass', 'rentagent']
+    ports: ['127.0.0.1:6379:6379']
+
+volumes:
+  pgdata: {}

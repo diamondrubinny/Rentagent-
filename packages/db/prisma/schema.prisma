@@ -1,0 +1,89 @@
+// RentAgent database schema.
+// Phase 1: installation settings, locales/translations, audit log, consent records.
+// Later phases add users, providers, agents, runs and billing (see PLAN.md §7).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Key/value installation settings. Secret values are stored encrypted by the application.
+model Setting {
+  key       String   @id @db.VarChar(120)
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedBy String?  @map("updated_by") @db.VarChar(64)
+
+  @@map("settings")
+}
+
+enum TextDirection {
+  LTR
+  RTL
+}
+
+/// UI locales available in this installation (built-in and operator-added).
+model Locale {
+  code       String        @id @db.VarChar(35) // BCP 47 tag
+  nativeName String        @map("native_name") @db.VarChar(80)
+  direction  TextDirection @default(LTR)
+  enabled    Boolean       @default(true)
+  isDefault  Boolean       @default(false) @map("is_default")
+  builtin    Boolean       @default(false)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  translations Translation[]
+
+  @@map("locales")
+}
+
+enum TranslationStatus {
+  AUTO
+  REVIEWED
+}
+
+/// Operator overrides for built-in strings and full translations for added locales.
+model Translation {
+  locale    String            @db.VarChar(35)
+  key       String            @db.VarChar(200)
+  value     String
+  status    TranslationStatus @default(REVIEWED)
+  updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  localeRef Locale @relation(fields: [locale], references: [code], onDelete: Cascade)
+
+  @@id([locale, key])
+  @@map("translations")
+}
+
+/// Append-only security/audit trail. Never store secrets or full request bodies here.
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  actorId   String?  @map("actor_id") @db.VarChar(64)
+  action    String   @db.VarChar(80)
+  target    String?  @db.VarChar(200)
+  ipHash    String?  @map("ip_hash") @db.VarChar(64)
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([action, createdAt])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}
+
+/// Proof of cookie consent choices. `anonId` is a random identifier, not linked to a user.
+model ConsentRecord {
+  id            BigInt   @id @default(autoincrement())
+  anonId        String   @map("anon_id") @db.VarChar(64)
+  policyVersion String   @map("policy_version") @db.VarChar(32)
+  categories    Json
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([anonId])
+  @@map("consent_records")
+}

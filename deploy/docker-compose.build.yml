@@ -1,0 +1,15 @@
+# Development/vendor override: build images from source instead of pulling them.
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+x-build: &build
+  context: ..
+  dockerfile: deploy/docker/Dockerfile
+  args:
+    RENTAGENT_VERSION: ${RENTAGENT_VERSION:-dev}
+
+services:
+  migrate:
+    build: { <<: *build, target: migrate }
+  web:
+    build: { <<: *build, target: web }
+  worker:
+    build: { <<: *build, target: worker }

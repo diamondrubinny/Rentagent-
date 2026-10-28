@@ -1,0 +1,18 @@
+# Automatic HTTPS via Let's Encrypt for APP_DOMAIN.
+# Security headers are set by the application; Caddy only terminates TLS and proxies.
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# Upload limit; individual endpoints enforce stricter limits.
+	request_body {
+		max_size 50MB
+	}
+
+	header -Server
+
+	reverse_proxy web:3000
+}

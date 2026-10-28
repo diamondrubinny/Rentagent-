@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+packages/db/src/generated/
+.next/
+dist/
+*.md
+deploy/docker/.ci-ca.crt

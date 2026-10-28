@@ -1,0 +1,141 @@
+# RentAgent production stack. Managed by the `rentagent` CLI; see REQUIREMENTS.md.
+# All configuration comes from .env in this directory (created by install.sh).
+name: rentagent
+
+x-app: &app
+  restart: unless-stopped
+  env_file: [.env]
+  read_only: true
+  security_opt: ['no-new-privileges:true']
+  cap_drop: [ALL]
+  tmpfs: ['/tmp']
+  logging:
+    driver: json-file
+    options: { max-size: '20m', max-file: '5' }
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on:
+      web: { condition: service_healthy }
+    logging:
+      driver: json-file
+      options: { max-size: '20m', max-file: '5' }
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rentagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-rentagent}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [backend]
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    command:
+      [
+        'sh',
+        '-c',
+        'exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory-policy noeviction',
+      ]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [backend]
+
+  migrate:
+    image: ${RENTAGENT_IMAGE_PREFIX:-ghcr.io/diamondrubinny/rentagent}-migrate:${RENTAGENT_VERSION:-latest}
+    restart: 'no'
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+    read_only: true
+    tmpfs: ['/tmp']
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+
+  web:
+    <<: *app
+    image: ${RENTAGENT_IMAGE_PREFIX:-ghcr.io/diamondrubinny/rentagent}-web:${RENTAGENT_VERSION:-latest}
+    tmpfs: ['/tmp', '/app/apps/web/.next/cache:uid=1000,gid=1000']
+    volumes:
+      - files:/data/files
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    networks: [edge, backend, egress]
+
+  worker:
+    <<: *app
+    image: ${RENTAGENT_IMAGE_PREFIX:-ghcr.io/diamondrubinny/rentagent}-worker:${RENTAGENT_VERSION:-latest}
+    volumes:
+      - files:/data/files
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    networks: [backend, egress]
+
+  # Optional malware scanning for uploads: COMPOSE_PROFILES=clamav (needs ~3 GB RAM).
+  clamav:
+    image: clamav/clamav:1.5
+    profiles: [clamav]
+    restart: unless-stopped
+    volumes:
+      - clamav:/var/lib/clamav
+    networks: [backend, egress]
+
+  # Optional local models: COMPOSE_PROFILES=ollama (GPU strongly recommended).
+  ollama:
+    image: ollama/ollama:0.40.12
+    profiles: [ollama]
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    networks: [backend, egress]
+
+networks:
+  edge: {}
+  backend:
+    internal: true # database and cache are never reachable from outside
+  egress: {}
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}
+  pgdata: {}
+  redisdata: {}
+  files: {}
+  clamav: {}
+  ollama: {}

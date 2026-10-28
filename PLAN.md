@@ -24,22 +24,18 @@
 
 ---
 
-## 2. הנחות ושאלות פתוחות
+## 2. החלטות (אושרו: "תחליט אתה על הכל")
 
-### הנחות
-1. השרת של הלקוח הוא VPS או שרת ייעודי עם Linux ו־Docker (ראו סעיף 4). כל הרכיבים רצים אצלו; אין תלות בענן שלך.
-2. **המערכת רב־לשונית לחלוטין** (סעיף 3.8): הסוכנים מבינים כל שפה ועונים בשפת המשתמש; הממשק נשלח עם עברית, אנגלית, ערבית ורוסית (מוכנות לבדיקת דובר שפת אם), והמפעיל יכול להוסיף כל שפה, כולל תרגום אוטומטי של הממשק בעזרת ה־AI.
-3. כל המידע של המפעיל ושל המשתמשים שלו נשאר על השרת שלו. אצלך (Vendor) עוברים רק בדיקת רישיון ובדיקת עדכונים — בלי מידע אישי.
-4. תשלומים: מודולים נפרדים (Stripe ראשון), כך שהמפעיל יכול גם לכבות תשלומים ולהשתמש במערכת לשימוש פנימי בלבד.
-
-### שאלות (עד 5)
-1. **סוג השרת של הלקוחות** — הם יכולים להריץ Docker על VPS (מומלץ מאוד), או שחלק מהם ב־Shared hosting / cPanel עם PHP בלבד? זה משנה את כל הסטאק (ראו סעיף 6).
-2. **מודל מכירה ורישוי** — רישיון חד־פעמי, שנתי או חודשי? בדיקת License key אונליין? עדכונים כלולים לתקופה מוגבלת?
-3. **מי בונה סוכנים בתוך התקנה** — רק המפעיל והצוות שלו, או שגם משתמשי קצה ויוצרים חיצוניים יכולים לפרסם סוכנים (Marketplace פנימי עם חלוקת הכנסות)?
-4. **איך משתמשי הקצה משלמים למפעיל** — אילו שערי תשלום נדרשים (Stripe, PayPal, סליקה ישראלית כמו Cardcom/Tranzila — **דורש אימות API**)? או שזה בעיקר לשימוש פנימי בארגון?
-5. **פעולות בעולם האמיתי** — האם סוכנים יוכלו לשלוח מיילים והודעות, לגלוש, להריץ קוד, לבצע רכישות? (משפיע על Sandbox ועל חובת אישור אנושי.)
-
----
+| # | נושא | החלטה | נימוק |
+|---|------|-------|-------|
+| 1 | סוג שרת | **VPS או שרת ייעודי עם Linux ו־Docker בלבד.** אחסון משותף/cPanel לא נתמך. | ריצות ארוכות, Streaming, תורים וסנדבוקס דורשים תהליכים קבועים |
+| 2 | רישוי | **רישיון שנתי** עם עדכונים ותמיכה בתקופה. כשהרישיון פג, המערכת ממשיכה לעבוד בגרסה הקיימת, בלי עדכונים. שלוש דרגות: Starter / Pro / Agency (White-label מלא). בדיקה אונליין פעם ביום, 14 יום חסד אופליין | מקובל בשוק, הוגן ללקוח, הכנסה חוזרת |
+| 3 | מי בונה סוכנים | **המפעיל והצוות שלו** (תפקיד AGENT_MANAGER) ב־MVP. Marketplace של יוצרים חיצוניים עם חלוקת הכנסות — V2, מאחורי Feature flag | פחות סיכון אבטחה ומשפטי בגרסה הראשונה |
+| 4 | תשלומים | **בינלאומיים, דרך מודולים (Gateway adapters):** Stripe + PayPal ב־MVP; Paddle (Merchant of Record שמטפל במע"מ גלובלי) ב־V2; סליקה ישראלית כמודול ב־V2. כמה מטבעות, סכומים ביחידות קטנות לפי ISO 4217 (לא כל מטבע הוא 2 ספרות אחרי הנקודה), מסים לפי מדינה (Stripe Tax אופציונלי או טבלת שיעורים ידנית), שדות Tax ID בחשבוניות. אפשר גם לכבות תשלומים לשימוש פנימי | כיסוי עולמי; המפעיל בוחר מה מתאים לו |
+| 5 | פעולות בעולם האמיתי | **מותר, עם אישור אנושי כברירת מחדל:** מייל, Webhook, HTTP/OpenAPI, MCP ב־MVP. הרצת קוד ודפדפן בסנדבוקס — V2 | ערך גבוה, סיכון מבוקר |
+| 6 | שפות וקוד | **בינלאומי מקצה לקצה:** קוד, הערות ושמות באנגלית; UTF-8 ונרמול NFC; כל הזמנים נשמרים ב־UTC ומוצגים לפי אזור הזמן של המשתמש; ממשק ב־he/en/ar/ru בהשקה + כל שפה שהמפעיל מוסיף | לפי הדרישה |
+| 7 | אחסון קבצים | **מערכת קבצים מקומית (Docker volume) כברירת מחדל**, S3-compatible כאופציה. בלי MinIO | MinIO הפסיק להפיץ images של גרסת הקהילה; פחות רכיבים להתקנה |
+| 8 | גרסאות | Node 22 LTS, Next.js 16, React 19, TypeScript 5.9, Prisma 7 (driver adapter ל־pg), Tailwind 4, Zod 4, next-intl 4, BullMQ 5 | גרסאות יציבות אחרונות; TypeScript 7 ו־Prisma 8 עדיין חדשים מדי |
 
 ## 3. מה המוצר כולל
 
@@ -164,7 +160,7 @@
 - **גיבוי:** מקום אחסון חיצוני מומלץ (S3-compatible או דיסק נפרד).
 
 ### רכיבים שרצים על השרת (Docker Compose)
-`caddy` (HTTPS) · `web` (Next.js) · `worker` (ריצות סוכנים, עיבוד ידע, סריקה, חיוב) · `postgres` + pgvector · `redis` · `minio` (קבצים) · `clamav` · `ollama` (אופציונלי)
+`caddy` (HTTPS) · `web` (Next.js) · `worker` (ריצות סוכנים, עיבוד ידע, סריקה, חיוב) · `postgres` + pgvector · `redis` · `clamav` (אופציונלי) · `ollama` (אופציונלי). קבצים: volume מקומי או S3 חיצוני
 
 ### זרימת התקנה
 ```
@@ -211,7 +207,7 @@ sudo bash install.sh
      │ Auth · RBAC · Zod · Rate limit · CSP · Settings    │
      └───┬───────────────┬─────────────────┬─────────────┘
          │               │                 │
-   postgres+pgvector   redis           minio (quarantine → clamav → clean)
+   postgres+pgvector   redis           files volume / S3 (quarantine → clamav → clean)
          │               │
      ┌───▼───────────────▼──────────────────────────────┐
      │ worker — BullMQ                                   │
@@ -238,7 +234,7 @@ sudo bash install.sh
 | Queue | Redis + BullMQ | ריצות ארוכות, retries, cron | Temporal | Temporal כבד מדי להתקנה אצל לקוח |
 | AI | Vercel AI SDK + OpenAI-compatible adapter | ממשק אחיד, Streaming, Tools | LiteLLM (Python, שירות נוסף) | **דורש אימות** תמיכה לכל ספק |
 | Auth | Better Auth | Self-hosted, 2FA, Passkeys, OAuth | Auth.js | **דורש אימות** פיצ'רים |
-| קבצים | MinIO + ClamAV | הכל על השרת של הלקוח | S3 חיצוני (אופציה) | — |
+| קבצים | Volume מקומי + ClamAV | הכל על השרת של הלקוח, בלי רכיב נוסף | S3 חיצוני (אופציה) | גיבוי ה־volume באחריות סקריפט הגיבוי |
 | Observability | Traces ב־Postgres + דשבורד מובנה; OpenTelemetry export אופציונלי | בלי תלות בשירות חיצוני | Langfuse self-host | — |
 
 **לגבי שאלה 1:** אם חלק מהלקוחות ב־Shared hosting/cPanel, הסטאק הזה לא ירוץ אצלם (אין Docker, אין תהליכי רקע ארוכים, אין Redis). החלופה היא גרסת PHP/Laravel עם cron במקום worker — פחות יכולות (Streaming, ריצות ארוכות, Sandbox). **ההמלצה: VPS בלבד**, ולהגדיר את זה כדרישת מערכת.
@@ -288,8 +284,11 @@ Approval(id, runStepId, action, status, decidedBy, decidedAt)
 
 — כסף
 Wallet(userId, balanceCents)
-LedgerEntry(id, userId, type: TOPUP|HOLD|CAPTURE|RELEASE|REFUND|ADJUST, amountCents, refType, refId)  — immutable
-Payment(id, userId, gateway, gatewayRef, amountCents, currency, status)
+Wallet.currency (ISO 4217), כל הסכומים ב־minor units (BigInt)
+LedgerEntry(id, userId, type: TOPUP|HOLD|CAPTURE|RELEASE|REFUND|ADJUST, amountMinor, currency, refType, refId)  — immutable
+Payment(id, userId, gateway: STRIPE|PAYPAL|PADDLE|..., gatewayRef, amountMinor, currency, taxMinor, country, status)
+TaxRate(id, country, region, rate, inclusive) · BillingProfile(userId, legalName, taxId, country, address)
+Price(id, planId|agentId, currency, amountMinor)                      — מחיר לכל מטבע
 
 — שונות
 File(id, ownerId, key, mime, size, sha256, scanStatus)
@@ -418,6 +417,4 @@ rentagent/
 ---
 
 ## 13. הצעד הבא
-1. לענות על 5 השאלות בסעיף 2 — במיוחד **שאלה 1 (סוג השרת)**, כי היא קובעת את הסטאק.
-2. לאשר או לתקן את רשימת ה־MVP.
-3. אחרי האישור — שלב 1.
+שלב 1 בביצוע — ראו `docs/phase-1.md`.
