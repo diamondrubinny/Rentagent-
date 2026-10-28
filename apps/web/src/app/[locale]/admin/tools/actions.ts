@@ -3,7 +3,13 @@
 import { randomUUID } from 'node:crypto';
 import { discoverMcpTools } from '@rentagent/agent-runtime';
 import { checkEndpointUrl } from '@rentagent/ai-gateway';
-import { decryptSecret, encryptSecret } from '@rentagent/core';
+import {
+  decryptSecret,
+  encryptSecret,
+  enqueueFileJob,
+  enqueueSystemJob,
+  getServerEnv,
+} from '@rentagent/core';
 import { Prisma, settingUpsert } from '@rentagent/db';
 import { normalizeSingleLine } from '@rentagent/shared';
 import { revalidatePath } from 'next/cache';
@@ -248,7 +254,22 @@ export async function setEmbeddingModel(modelId: string): Promise<FormResult> {
   if (!uuid.safeParse(modelId).success) return { ok: false, error: 'invalid' };
   const model = await db().aiModel.findFirst({ where: { id: modelId, kind: 'EMBEDDING' } });
   if (!model) return { ok: false, error: 'notFound' };
+  const previous = await db().setting.findUnique({ where: { key: 'ai.embeddingModelId' } });
   await db().setting.upsert(settingUpsert('ai.embeddingModelId', modelId, actor.id));
+  if (previous?.value !== modelId) {
+    // Vectors of another model are not comparable: re-embed agents and knowledge.
+    const redisUrl = getServerEnv().REDIS_URL;
+    await enqueueSystemJob(redisUrl, { name: 'reindex-agents', data: {} });
+    const sources = await db().knowledgeSource.findMany({
+      where: {
+        OR: [{ status: 'READY' }, { status: 'FAILED', error: 'no_embedding_model' }],
+        file: { scanStatus: { in: ['CLEAN', 'SKIPPED'] } },
+      },
+      select: { id: true },
+    });
+    for (const source of sources)
+      await enqueueFileJob(redisUrl, { kind: 'ingest', sourceId: source.id });
+  }
   await audit('ai.embedding_model_set', { actorId: actor.id, target: `model:${modelId}` });
   refresh();
   return { ok: true };

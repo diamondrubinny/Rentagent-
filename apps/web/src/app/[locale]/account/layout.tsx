@@ -26,6 +26,11 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
               {t('security.title')}
             </Link>
           </li>
+          <li>
+            <Link className="link" href="/account/privacy">
+              {t('privacy')}
+            </Link>
+          </li>
         </ul>
       </nav>
       <div>{children}</div>

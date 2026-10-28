@@ -26,6 +26,7 @@ const base = {
   fetchAllowedDomains: [],
   outputFormat: 'markdown' as const,
   temperature: null,
+  conversation: { followUps: true, historyTurns: 10 },
 };
 
 const field = (

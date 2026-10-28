@@ -98,3 +98,39 @@ describe('runInputSchema', () => {
     expect(paths).toEqual(expect.arrayContaining(['task', 'site', 'tone']));
   });
 });
+
+describe('foldForSearch', () => {
+  it('folds case, accents, niqqud, harakat and tatweel', async () => {
+    const { foldForSearch, searchTerms } = await import('../src/text');
+    expect(foldForSearch('Café  RÉSUMÉ!')).toBe('cafe resume');
+    expect(foldForSearch('שָׁלוֹם')).toBe('שלום');
+    expect(foldForSearch('مَرْحَبًا')).toBe('مرحبا');
+    expect(foldForSearch('عـــربي')).toBe('عربي');
+    expect(foldForSearch('ＡＢＣ１')).toBe('abc1');
+    expect(searchTerms('a sales SALES agent')).toEqual(['sales', 'agent']);
+  });
+
+  it('gives older configs the conversation defaults', () => {
+    const { conversation, ...legacy } = defaultAgentConfig();
+    expect(conversation.followUps).toBe(true);
+    expect(agentConfigSchema.parse(legacy).conversation).toEqual({
+      followUps: true,
+      historyTurns: 10,
+    });
+  });
+});
+
+describe('agent search text', () => {
+  it('covers every language and the category', async () => {
+    const { agentSearchText, localizedAgent } = await import('../src/agent');
+    const agent = {
+      name: 'Translator',
+      description: 'Translates text.',
+      category: 'translation',
+      localizations: { he: { name: 'מְתַרְגֵּם', description: '' }, ar: { name: 'مترجم' } },
+    };
+    expect(agentSearchText(agent)).toBe('translator translates text מתרגם مترجم translation');
+    expect(localizedAgent(agent, 'ar')).toEqual({ name: 'مترجم', description: 'Translates text.' });
+    expect(localizedAgent(agent, 'ru').name).toBe('Translator');
+  });
+});

@@ -1,13 +1,14 @@
 'use server';
 
 import { AGENT_TEMPLATES } from '@rentagent/agent-runtime';
-import { enqueueRun, getServerEnv, rateLimit } from '@rentagent/core';
+import { enqueueRun, enqueueSystemJob, getServerEnv, rateLimit } from '@rentagent/core';
 import { Prisma } from '@rentagent/db';
 import {
   type AgentConfig,
   agentConfigSchema,
   agentExportSchema,
   agentMetaSchema,
+  agentSearchText,
   defaultAgentConfig,
   isBuiltinLocale,
   runInputSchema,
@@ -16,6 +17,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authorizeAction } from '@/lib/server/admin-action';
 import { audit } from '@/lib/server/audit';
+import { cancelRunAs, decideApprovalAs } from '@/lib/server/runs';
 import { db, redis } from '@/lib/server/runtime';
 import type { FormResult } from '../providers/actions';
 
@@ -28,6 +30,10 @@ function fieldErrorsOf(error: z.ZodError): Record<string, string> {
   for (const issue of error.issues) errors[issue.path.join('.') || 'form'] ??= issue.message;
   return errors;
 }
+
+/** Refreshes the semantic search vector in the background (search text is set inline). */
+const indexAgentLater = (agentId: string) =>
+  enqueueSystemJob(getServerEnv().REDIS_URL, { name: 'index-agent', data: { agentId } });
 
 /** Finds a free slug: "name", "name-2", "name-3", ... */
 async function uniqueSlug(base: string): Promise<string> {
@@ -82,7 +88,7 @@ export async function createAgent(templateKey: string | null): Promise<FormResul
     ? AGENT_TEMPLATES.find((candidate) => candidate.key === templateKey)
     : null;
   if (templateKey && !template) return { ok: false, error: 'invalid' };
-  const agent = await db().agent.create({
+  const created = await db().agent.create({
     data: template
       ? {
           slug: await uniqueSlug(template.slug),
@@ -107,6 +113,11 @@ export async function createAgent(templateKey: string | null): Promise<FormResul
           createdById: actor.id,
         },
   });
+  const agent = await db().agent.update({
+    where: { id: created.id },
+    data: { searchText: agentSearchText(created) },
+  });
+  await indexAgentLater(agent.id);
   await audit('agents.created', {
     actorId: actor.id,
     target: `agent:${agent.id}`,
@@ -143,10 +154,12 @@ export async function importAgent(json: string): Promise<FormResult> {
       category: imported.category,
       description: imported.description,
       localizations: imported.localizations,
+      searchText: agentSearchText(imported),
       draft: config as object,
       createdById: actor.id,
     },
   });
+  await indexAgentLater(agent.id);
   await audit('agents.imported', { actorId: actor.id, target: `agent:${agent.id}` });
   refresh();
   return { ok: true, id: agent.id };
@@ -160,7 +173,10 @@ export async function updateAgentMeta(agentId: string, input: unknown): Promise<
   if (!parsed.success)
     return { ok: false, error: 'invalid', fieldErrors: fieldErrorsOf(parsed.error) };
   try {
-    await db().agent.update({ where: { id: agentId }, data: parsed.data });
+    await db().agent.update({
+      where: { id: agentId },
+      data: { ...parsed.data, searchText: agentSearchText(parsed.data) },
+    });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return { ok: false, error: 'invalid', fieldErrors: { slug: 'duplicateSlug' } };
@@ -169,7 +185,27 @@ export async function updateAgentMeta(agentId: string, input: unknown): Promise<
       return { ok: false, error: 'notFound' };
     throw error;
   }
+  await indexAgentLater(agentId);
   await audit('agents.meta_updated', { actorId: actor.id, target: `agent:${agentId}` });
+  refresh();
+  return { ok: true };
+}
+
+/** Featured agents are listed first in the catalog and on the home page. */
+export async function setAgentFeatured(agentId: string, featured: boolean): Promise<FormResult> {
+  const actor = await authorizeAction('agents.manage');
+  if (!actor) return forbidden;
+  if (!uuid.safeParse(agentId).success) return { ok: false, error: 'invalid' };
+  const { count } = await db().agent.updateMany({
+    where: { id: agentId },
+    data: { featured: featured === true },
+  });
+  if (count === 0) return { ok: false, error: 'notFound' };
+  await audit('agents.featured_set', {
+    actorId: actor.id,
+    target: `agent:${agentId}`,
+    meta: { featured: featured === true },
+  });
   refresh();
   return { ok: true };
 }
@@ -361,58 +397,19 @@ export async function cancelRun(runId: string): Promise<FormResult> {
   const actor = await authorizeAction('agents.manage');
   if (!actor) return forbidden;
   if (!uuid.safeParse(runId).success) return { ok: false, error: 'invalid' };
-  const run = await db().run.findUnique({ where: { id: runId }, select: { status: true } });
-  if (!run) return { ok: false, error: 'notFound' };
-  if (run.status === 'WAITING_APPROVAL' || run.status === 'QUEUED') {
-    // Not being executed right now: cancel directly.
-    await db().run.update({
-      where: { id: runId },
-      data: { status: 'CANCELED', cancelRequested: true, finishedAt: new Date() },
-    });
-    await db().approval.updateMany({
-      where: { runId, status: 'PENDING' },
-      data: { status: 'REJECTED', decidedById: actor.id, decidedAt: new Date() },
-    });
-    await redis().publish(`run:${runId}`, JSON.stringify({ type: 'status', status: 'CANCELED' }));
-  } else if (run.status === 'RUNNING') {
-    await db().run.update({ where: { id: runId }, data: { cancelRequested: true } });
-  } else {
-    return { ok: false, error: 'alreadyFinished' };
-  }
+  const result = await cancelRunAs(actor.id, runId);
+  if (!result.ok) return result;
   await audit('runs.cancel_requested', { actorId: actor.id, target: `run:${runId}` });
   return { ok: true };
 }
 
+/** Staff decide approvals of their own preview runs only (see decideApprovalAs). */
 export async function decideApproval(approvalId: string, approve: boolean): Promise<FormResult> {
   const actor = await authorizeAction('agents.manage');
   if (!actor) return forbidden;
   if (!uuid.safeParse(approvalId).success) return { ok: false, error: 'invalid' };
-  const decided = await db().$transaction(async (tx) => {
-    const approval = await tx.approval.findUnique({
-      where: { id: approvalId },
-      include: { run: { select: { status: true } } },
-    });
-    if (!approval) return null;
-    if (approval.status !== 'PENDING' || approval.run.status !== 'WAITING_APPROVAL')
-      return 'stale' as const;
-    await tx.approval.update({
-      where: { id: approvalId },
-      data: {
-        status: approve ? 'APPROVED' : 'REJECTED',
-        decidedById: actor.id,
-        decidedAt: new Date(),
-      },
-    });
-    const stillPending = await tx.approval.count({
-      where: { runId: approval.runId, status: 'PENDING' },
-    });
-    if (stillPending === 0)
-      await tx.run.update({ where: { id: approval.runId }, data: { status: 'QUEUED' } });
-    return { runId: approval.runId, resume: stillPending === 0, toolName: approval.toolName };
-  });
-  if (decided === null) return { ok: false, error: 'notFound' };
-  if (decided === 'stale') return { ok: false, error: 'alreadyDecided' };
-  if (decided.resume) await enqueueRun(getServerEnv().REDIS_URL, decided.runId);
+  const decided = await decideApprovalAs(actor.id, approvalId, approve);
+  if (!decided.ok) return decided;
   await audit(approve ? 'runs.action_approved' : 'runs.action_rejected', {
     actorId: actor.id,
     target: `run:${decided.runId}`,

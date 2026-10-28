@@ -90,6 +90,8 @@ export default async function AgentPage({ params }: PageProps) {
 
       <PublishPanel
         agentId={agent.id}
+        slug={agent.slug}
+        featured={agent.featured}
         status={agent.status}
         publishedVersion={published?.version ?? null}
         versions={agent.versions.map((version) => ({

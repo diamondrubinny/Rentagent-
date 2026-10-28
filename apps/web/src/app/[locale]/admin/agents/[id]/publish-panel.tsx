@@ -5,7 +5,13 @@ import { useState } from 'react';
 import { FormMessage } from '@/components/forms';
 import { useAction } from '@/components/use-action';
 import { Link, useRouter } from '@/i18n/navigation';
-import { deleteAgent, publishAgent, restoreVersion, setAgentStatus } from '../actions';
+import {
+  deleteAgent,
+  publishAgent,
+  restoreVersion,
+  setAgentFeatured,
+  setAgentStatus,
+} from '../actions';
 
 interface VersionView {
   id: string;
@@ -17,11 +23,15 @@ interface VersionView {
 
 export function PublishPanel({
   agentId,
+  slug,
+  featured,
   status,
   publishedVersion,
   versions,
 }: {
   agentId: string;
+  slug: string;
+  featured: boolean;
   status: string;
   publishedVersion: number | null;
   versions: VersionView[];
@@ -33,6 +43,8 @@ export function PublishPanel({
   const { pending, outcome, run } = useAction();
   const [note, setNote] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Optimistic: the box reflects the click at once and reverts if saving fails.
+  const [isFeatured, setIsFeatured] = useState(featured);
 
   let message: string | null = null;
   if (outcome?.ok)
@@ -52,6 +64,34 @@ export function PublishPanel({
         <strong>{tStatus(status)}</strong>
         {publishedVersion !== null && ` · ${t('liveVersion', { version: publishedVersion })}`}
       </p>
+      {status === 'PUBLISHED' && publishedVersion !== null && (
+        <p>
+          <Link className="link" href={`/agents/${slug}`}>
+            {t('viewInCatalog')}
+          </Link>
+        </p>
+      )}
+      <label className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          className="size-5"
+          checked={isFeatured}
+          disabled={pending}
+          onChange={(event) => {
+            const next = event.target.checked;
+            setIsFeatured(next);
+            run(
+              async () => {
+                const result = await setAgentFeatured(agentId, next);
+                if (!result.ok) setIsFeatured(!next);
+                return result;
+              },
+              () => router.refresh(),
+            );
+          }}
+        />
+        {t('featured')}
+      </label>
       {message && <FormMessage tone="success">{message}</FormMessage>}
       {outcome && !outcome.ok && <FormMessage tone="error">{tErrors(outcome.error)}</FormMessage>}
 

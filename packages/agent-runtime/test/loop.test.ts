@@ -40,6 +40,15 @@ describe('pendingToolCalls', () => {
     ];
     expect(pendingToolCalls(answered)).toEqual([]);
   });
+
+  it('never replays unanswered calls once the user wrote a new message', () => {
+    const messages: ModelMessage[] = [
+      { role: 'user', content: 'send it' },
+      { role: 'assistant', content: [call('a', 'send_email')] },
+      { role: 'user', content: 'actually, do something else' },
+    ];
+    expect(pendingToolCalls(messages)).toEqual([]);
+  });
 });
 
 describe('buildSystemPrompt', () => {

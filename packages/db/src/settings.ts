@@ -26,6 +26,12 @@ export interface SettingValues {
   'ai.disabled': boolean;
   /** AiModel.id (kind EMBEDDING) used for knowledge bases. */
   'ai.embeddingModelId': string;
+  /** Whether visitors can browse the agent catalog without signing in. */
+  'agents.catalogPublic': boolean;
+  /** Live runs (turns) per user per day; 0 = unlimited. Credits replace this in billing. */
+  'agents.userDailyRunLimit': number;
+  /** Conversations and runs untouched for this many days are deleted; 0 = keep. */
+  'privacy.runRetentionDays': number;
   'setup.completedAt': string; // ISO timestamp
 }
 

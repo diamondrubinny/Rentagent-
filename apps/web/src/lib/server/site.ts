@@ -10,7 +10,16 @@ export interface SiteConfig {
   /** Self-service sign-up is possible (operator opened it and SMTP works for verification). */
   registrationOpen: boolean;
   smtpEnabled: boolean;
+  /** Visitors may browse the agent catalog without signing in. */
+  catalogPublic: boolean;
+  /** Live runs per user per day; 0 = unlimited. */
+  userDailyRunLimit: number;
+  /** Days before untouched conversations are deleted; 0 = keep. */
+  runRetentionDays: number;
 }
+
+export const DEFAULT_USER_DAILY_RUN_LIMIT = 50;
+export const DEFAULT_RUN_RETENTION_DAYS = 180;
 
 const DEFAULT_SITE_NAME = 'RentAgent';
 
@@ -23,6 +32,9 @@ export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
       'privacy.optionalTrackersEnabled',
       'auth.registrationMode',
       'mail.smtp',
+      'agents.catalogPublic',
+      'agents.userDailyRunLimit',
+      'privacy.runRetentionDays',
     ] as const);
     const smtpEnabled = Boolean(settings['mail.smtp']?.enabled);
     return {
@@ -31,6 +43,9 @@ export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
       optionalTrackersEnabled: settings['privacy.optionalTrackersEnabled'] ?? false,
       registrationOpen: smtpEnabled && settings['auth.registrationMode'] === 'open',
       smtpEnabled,
+      catalogPublic: settings['agents.catalogPublic'] ?? true,
+      userDailyRunLimit: settings['agents.userDailyRunLimit'] ?? DEFAULT_USER_DAILY_RUN_LIMIT,
+      runRetentionDays: settings['privacy.runRetentionDays'] ?? DEFAULT_RUN_RETENTION_DAYS,
     };
   } catch (error) {
     logger().error({ err: error }, 'failed to load site settings');

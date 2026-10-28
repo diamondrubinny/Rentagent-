@@ -56,6 +56,9 @@ export default async function RunsPage({ params }: PageProps) {
                 <th scope="col" className="p-3 text-start">
                   {t('runs.by')}
                 </th>
+                <th scope="col" className="p-3 text-start">
+                  {t('runs.feedback')}
+                </th>
                 <th scope="col" className="p-3 text-end">
                   {t('runs.cost')}
                 </th>
@@ -76,6 +79,22 @@ export default async function RunsPage({ params }: PageProps) {
                   <td className="p-3">{t(`runs.mode_${run.mode}`)}</td>
                   <td className="p-3" dir="auto">
                     {run.user?.name ?? '—'}
+                  </td>
+                  <td className="p-3">
+                    {run.rating === 1
+                      ? t('runs.helpful')
+                      : run.rating === -1
+                        ? t('runs.notHelpful')
+                        : '—'}
+                    {run.feedback && (
+                      <span
+                        className="block max-w-xs truncate text-muted"
+                        dir="auto"
+                        title={run.feedback}
+                      >
+                        {run.feedback}
+                      </span>
+                    )}
                   </td>
                   <td className="p-3 text-end" dir="ltr">
                     {formatMicros(run.costMicros, 4)} USD

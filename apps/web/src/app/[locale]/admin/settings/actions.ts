@@ -48,3 +48,50 @@ export async function updateGeneralSettings(input: {
   revalidatePath('/', 'layout');
   return { ok: true };
 }
+
+const usageSchema = z.object({
+  catalogPublic: z.boolean(),
+  userDailyRunLimit: z.coerce
+    .number({ error: 'invalidNumber' })
+    .int({ error: 'invalidNumber' })
+    .min(0, { error: 'invalidNumber' })
+    .max(100_000, { error: 'invalidNumber' }),
+  runRetentionDays: z.coerce
+    .number({ error: 'invalidNumber' })
+    .int({ error: 'invalidNumber' })
+    .min(0, { error: 'invalidNumber' })
+    .max(3650, { error: 'invalidNumber' }),
+});
+
+/** Catalog visibility, per-user daily turns and conversation retention. */
+export async function updateUsageSettings(input: {
+  catalogPublic: boolean;
+  userDailyRunLimit: string;
+  runRetentionDays: string;
+}): Promise<SettingsResult> {
+  const actor = await authorizeAction('settings.manage');
+  if (!actor) return { ok: false, error: 'forbidden' };
+  const parsed = usageSchema.safeParse(input);
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return { ok: false, error: 'invalid', fieldErrors };
+  }
+  const { catalogPublic, userDailyRunLimit, runRetentionDays } = parsed.data;
+  await db().$transaction([
+    db().setting.upsert(settingUpsert('agents.catalogPublic', catalogPublic, actor.id)),
+    db().setting.upsert(settingUpsert('agents.userDailyRunLimit', userDailyRunLimit, actor.id)),
+    db().setting.upsert(settingUpsert('privacy.runRetentionDays', runRetentionDays, actor.id)),
+  ]);
+  await audit('settings.updated', {
+    actorId: actor.id,
+    meta: {
+      keys: ['agents.catalogPublic', 'agents.userDailyRunLimit', 'privacy.runRetentionDays'],
+      catalogPublic,
+      userDailyRunLimit,
+      runRetentionDays,
+    },
+  });
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}

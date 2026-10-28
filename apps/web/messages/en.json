@@ -14,7 +14,9 @@
     "account": "My account",
     "signIn": "Sign in",
     "signUp": "Sign up",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "agents": "Agents",
+    "chats": "My chats"
   },
   "Footer": {
     "legalNav": "Legal and accessibility",
@@ -33,7 +35,19 @@
     "notConfiguredBody": "The administrator needs to complete the initial setup before the platform can be used.",
     "goToSetup": "Go to initial setup",
     "setupDone": "Initial setup completed successfully.",
-    "comingSoon": "The agent catalog will be available soon."
+    "browse": "Browse agents",
+    "signInToBrowse": "Sign in to see the agents",
+    "myChats": "My chats",
+    "featuredTitle": "Featured agents",
+    "noAgentsYet": "No agents are published yet.",
+    "howTitle": "How it works",
+    "step1Title": "Choose an agent",
+    "step1Body": "Search in any language and read what the agent can do before you start.",
+    "step2Title": "Describe the task",
+    "step2Body": "Fill in a short form, follow the answer as it is written, and ask follow-up questions.",
+    "step3Title": "Stay in control",
+    "step3Body": "Actions such as sending an email wait for your approval. Download or delete your results at any time.",
+    "accountDeleted": "Your account and its data were deleted."
   },
   "Setup": {
     "metaTitle": "Initial setup",
@@ -312,7 +326,8 @@
         "revoked": "The session was signed out.",
         "revokedOthers": "All other devices were signed out."
       }
-    }
+    },
+    "privacy": "Privacy and data"
   },
   "Admin": {
     "nav": "Admin",
@@ -411,6 +426,18 @@
       "lastOwner": "The installation must keep at least one active owner.",
       "smtpRequired": "Configure outgoing email before opening registration.",
       "generic": "Something went wrong. Please try again."
+    },
+    "usageSettings": {
+      "title": "Agents and privacy",
+      "catalogPublic": "Public agent catalog",
+      "catalogPublicHint": "Visitors can browse agents without signing in. Using an agent always requires an account.",
+      "dailyLimit": "Tasks per user per day",
+      "dailyLimitHint": "Each message to an agent counts as one task. 0 means no limit.",
+      "retention": "Delete unused chats after (days)",
+      "retentionHint": "Chats and test runs untouched for this long are deleted automatically. 0 keeps them until users delete them.",
+      "saving": "Saving…",
+      "save": "Save",
+      "saved": "Settings saved."
     }
   },
   "AdminAi": {
@@ -758,7 +785,12 @@
       "format_markdown": "Formatted (Markdown)",
       "format_text": "Plain text",
       "saving": "Saving…",
-      "save": "Save draft"
+      "save": "Save draft",
+      "conversation": "Conversation",
+      "followUps": "Allow follow-up messages",
+      "followUpsHint": "Users can continue the chat after the first answer.",
+      "historyTurns": "Previous exchanges sent with each message",
+      "historyTurnsHint": "1–50. More context costs more tokens."
     },
     "tools": {
       "calculator": {
@@ -800,7 +832,9 @@
       "cancel": "Cancel",
       "versions": "{count, plural, one {# version} other {# versions}}",
       "live": "live",
-      "restore": "Restore to draft"
+      "restore": "Restore to draft",
+      "viewInCatalog": "View in the catalog",
+      "featured": "Feature this agent in the catalog and on the home page"
     },
     "knowledge": {
       "intro": "Upload documents the agent can search (enable the \"Knowledge search\" tool). Files are scanned for malware before use.",
@@ -847,7 +881,10 @@
       "cost": "Cost",
       "started": "Started",
       "mode_PREVIEW": "Test",
-      "mode_LIVE": "Live"
+      "mode_LIVE": "Live",
+      "feedback": "Feedback",
+      "helpful": "Helpful",
+      "notHelpful": "Not helpful"
     },
     "runStatus": {
       "QUEUED": "Queued",
@@ -879,7 +916,9 @@
       "step_APPROVAL": "Approval requested",
       "step_SYSTEM": "System",
       "stepFailed": "failed",
-      "calledTools": "Called: {tools}"
+      "calledTools": "Called: {tools}",
+      "approvalByOwner": "This run waits for the approval of the person who started it.",
+      "writing": "Writing…"
     },
     "errors": {
       "forbidden": "You are not allowed to do this.",
@@ -964,6 +1003,171 @@
       "refreshing": "Connecting…",
       "refreshed": "Loaded {count} tools.",
       "toolsLabel": "Tools offered by this server"
+    }
+  },
+  "Catalog": {
+    "title": "Agents",
+    "intro": "AI agents that complete tasks for you. Search in any language.",
+    "searchLabel": "Search agents",
+    "searchHint": "Words in any language, for example \"sales email\" or \"תרגום\".",
+    "category": "Category",
+    "allCategories": "All categories",
+    "search": "Search",
+    "results": "{count, plural, =0 {No agents found} one {# agent found} other {# agents found}}",
+    "allAgents": "All agents",
+    "noResults": "No agent matches your search. Try other words or another category.",
+    "empty": "No agents are published yet.",
+    "related": "Related agents",
+    "featured": "Featured",
+    "categories": {
+      "support": "Customer support",
+      "research": "Research",
+      "content": "Content",
+      "documents": "Documents",
+      "meetings": "Meetings",
+      "sales": "Sales",
+      "reports": "Reports",
+      "translation": "Translation",
+      "other": "Other"
+    },
+    "backToCatalog": "All agents",
+    "capabilities": "What this agent can do",
+    "noTools": "It answers from its instructions only; it does not use tools.",
+    "needsApproval": "asks for your approval first",
+    "aiNotice": "Answers are generated by AI and can contain mistakes. Check important information.",
+    "startTitle": "Start a task",
+    "signInToStart": "<link>Sign in</link> to use this agent.",
+    "noFields": "This agent needs no details. Start whenever you are ready.",
+    "starting": "Starting…",
+    "start": "Start",
+    "tools": {
+      "calculator": "Calculates exactly",
+      "current_time": "Knows the current date and time",
+      "web_fetch": "Reads public web pages",
+      "knowledge_search": "Searches its knowledge base",
+      "send_email": "Sends an email",
+      "mcp": "Uses tools of {name}"
+    }
+  },
+  "Chat": {
+    "listTitle": "My chats",
+    "newChat": "New chat",
+    "searchLabel": "Search my chats",
+    "search": "Search",
+    "noResults": "No chat matches your search.",
+    "empty": "You have no chats yet. Choose an agent to start.",
+    "needsYourApproval": "Waiting for your approval",
+    "delete": "Delete",
+    "deleteNamed": "Delete chat \"{title}\"",
+    "deleteConfirm": "Delete this chat permanently?",
+    "deleteYes": "Yes, delete",
+    "cancel": "Cancel",
+    "conversation": "Chat",
+    "allChats": "All my chats",
+    "agentPage": "About {name}",
+    "messages": "Messages",
+    "connectionLost": "The live connection was interrupted. Reload the page to see the latest state.",
+    "you": "You",
+    "titleLabel": "Chat name",
+    "save": "Save",
+    "rename": "Rename",
+    "downloadChat": "Download chat (.md)",
+    "print": "Print or save as PDF",
+    "usedTools": "Used: {tools}",
+    "approvalTitle": "Approval needed: {action}",
+    "approvalIntro": "The agent wants to do the following on your behalf. Nothing happens until you approve.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "stop": "Stop",
+    "copy": "Copy",
+    "copied": "Copied to the clipboard.",
+    "downloadMd": "Download .md",
+    "downloadTxt": "Download .txt",
+    "rateLabel": "Was this answer helpful?",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "feedbackLabel": "What was wrong? (optional)",
+    "sendFeedback": "Send feedback",
+    "feedbackThanks": "Thank you for your feedback.",
+    "followUpsDisabled": "This agent does not take follow-up messages. Start a new chat for another task.",
+    "agentUnavailable": "This agent is not available at the moment, so the chat cannot continue.",
+    "messageLabel": "Your message",
+    "messageHint": "Press Ctrl+Enter (⌘+Enter on Mac) to send.",
+    "waitForAnswer": "Wait for the answer…",
+    "send": "Send",
+    "characters": "{count} / {max} characters",
+    "status": {
+      "QUEUED": "Waiting to start…",
+      "RUNNING": "Working on it…",
+      "WAITING_APPROVAL": "Waiting for your approval",
+      "SUCCEEDED": "Answer ready",
+      "FAILED": "The task failed",
+      "CANCELED": "Stopped"
+    },
+    "runErrors": {
+      "generic": "Something went wrong. Try again in a moment.",
+      "timeout": "The task took too long and was stopped. Try a smaller task.",
+      "max_steps": "The agent reached its step limit for this task. Try a simpler or more specific request.",
+      "budget": "The agent reached its limit for this task. Try a simpler or more specific request.",
+      "content_filter": "The request was blocked by the content filter.",
+      "invalid_request": "The request could not be processed. It may be too long.",
+      "unavailable_disabled": "The service is paused at the moment. Try again later.",
+      "unavailable_no_models": "The service is unavailable at the moment. Try again later.",
+      "unavailable_no_keys": "The service is unavailable at the moment. Try again later.",
+      "auth": "The service is unavailable at the moment. Try again later.",
+      "rate_limit": "The service is busy. Try again in a few minutes.",
+      "server": "The service is unavailable at the moment. Try again later.",
+      "network": "The service could not be reached. Try again later.",
+      "internal": "Something went wrong. Try again in a moment."
+    },
+    "errors": {
+      "signedOut": "Your session has ended. Sign in again.",
+      "notFound": "This chat or agent no longer exists.",
+      "invalid": "Some details are missing or invalid.",
+      "rateLimited": "You are sending too fast. Wait a minute.",
+      "dailyLimit": "You reached today's limit of tasks. Try again tomorrow.",
+      "agentUnavailable": "This agent is not available at the moment.",
+      "followUpsDisabled": "This agent does not take follow-up messages.",
+      "busy": "Wait for the current answer to finish.",
+      "alreadyDecided": "This action was already decided.",
+      "alreadyFinished": "The task has already finished.",
+      "notFinished": "Rate the answer after it is finished.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "validation": {
+      "required": "Write a message first.",
+      "tooLong": "The text is too long."
+    }
+  },
+  "Privacy": {
+    "title": "Privacy and data",
+    "retention": "Chats you have not used for {days} days are deleted automatically.",
+    "retentionKeep": "Your chats are kept until you delete them.",
+    "policyLinks": "Read the <privacy>privacy policy</privacy> and manage <cookies>cookie settings</cookies>.",
+    "exportTitle": "Download my data",
+    "exportBody": "A JSON file with your profile, chats, answers, feedback, usage and security events.",
+    "exportButton": "Download my data",
+    "historyTitle": "Delete chat history",
+    "historyBody": "Deletes all your chats and answers permanently. Your account stays.",
+    "historyButton": "Delete all chats",
+    "historyConfirm": "Delete all chats permanently?",
+    "historyDeleted": "All your chats were deleted.",
+    "confirmYes": "Yes, delete",
+    "cancel": "Cancel",
+    "error": "Something went wrong. Please try again.",
+    "deleteTitle": "Delete my account",
+    "deleteStaff": "Staff accounts cannot be deleted here. Ask an owner of this installation to remove your account.",
+    "deleteBody": "Deletes your account, chats and sessions permanently. This cannot be undone.",
+    "passwordLabel": "Your password",
+    "deleteConfirmCheckbox": "I understand that my account and data will be deleted permanently.",
+    "confirmRequired": "Check the box to confirm.",
+    "deleting": "Deleting…",
+    "deleteButton": "Delete my account",
+    "errors": {
+      "wrongPassword": "The password is not correct.",
+      "staffAccount": "Staff accounts cannot be deleted here.",
+      "rateLimited": "Too many attempts. Try again later.",
+      "signedOut": "Your session has ended. Sign in again."
     }
   }
 }

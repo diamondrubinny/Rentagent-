@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function RunPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale);
-  await requirePermission(locale, 'agents.manage', `/admin/runs/${id}`);
+  const viewer = await requirePermission(locale, 'agents.manage', `/admin/runs/${id}`);
   if (!z.uuid().safeParse(id).success) notFound();
   const run = await db().run.findUnique({ where: { id }, select: { id: true, agentId: true } });
   if (!run) notFound();
@@ -35,7 +35,7 @@ export default async function RunPage({ params }: PageProps) {
           {t('agent')}
         </Link>
       </p>
-      <RunView runId={run.id} />
+      <RunView runId={run.id} viewerId={viewer.id} />
     </div>
   );
 }

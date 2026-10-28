@@ -1,5 +1,6 @@
 export * from './calculator';
 export * from './clamav';
+export * from './conversation';
 export * from './files';
 export * from './loop';
 export * from './net-guard';

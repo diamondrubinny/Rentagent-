@@ -22,3 +22,9 @@ export async function apiUser(permission: Permission): Promise<SessionUser | nul
   if (requiresTwoFactor(user.role) && !user.twoFactorEnabled) return null;
   return user;
 }
+
+/** Any signed-in, active account (end-user API routes; ownership is checked by the caller). */
+export async function apiActiveUser(): Promise<SessionUser | null> {
+  const user = await getCurrentUser();
+  return user && user.status === 'ACTIVE' ? user : null;
+}

@@ -177,3 +177,33 @@ body {
   padding-inline-start: 0.75rem;
   color: var(--color-muted);
 }
+
+/* Catalog cards: the stretched link focuses the whole card. */
+.card-link:has(a:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.card-link a:focus-visible {
+  outline: none;
+}
+.card-link:hover {
+  border-color: var(--color-primary);
+}
+
+/* Chat bubbles keep each message's own direction; code stays left-to-right. */
+.chat-message pre,
+.chat-message code {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  .chat-message {
+    break-inside: avoid;
+  }
+}

@@ -12,6 +12,11 @@ export interface RunJob {
   runId: string;
 }
 
+/** Maintenance jobs handled by the worker's system queue. */
+export type SystemJob =
+  | { name: 'index-agent'; data: { agentId: string } }
+  | { name: 'reindex-agents'; data: Record<string, never> };
+
 export type FileJob = { kind: 'scan'; fileId: string } | { kind: 'ingest'; sourceId: string };
 
 export const MAIL_TEMPLATES = [
@@ -34,6 +39,7 @@ export interface MailJob {
 }
 
 const globalForQueues = globalThis as unknown as {
+  rentagentSystemQueue?: Queue;
   rentagentMailQueue?: Queue<MailJob>;
   rentagentRunQueue?: Queue<RunJob>;
   rentagentFileQueue?: Queue<FileJob>;
@@ -86,4 +92,22 @@ export async function enqueueFileJob(redisUrl: string, job: FileJob): Promise<vo
     },
   });
   await globalForQueues.rentagentFileQueue.add(job.kind, job);
+}
+
+export async function enqueueSystemJob(redisUrl: string, job: SystemJob): Promise<void> {
+  globalForQueues.rentagentSystemQueue ??= new Queue(QUEUE_NAMES.system, {
+    connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 10_000 },
+      removeOnComplete: true,
+      removeOnFail: 100,
+    },
+  });
+  // Repeated requests for the same agent within a moment collapse into one job.
+  const jobId =
+    job.name === 'index-agent'
+      ? `index-agent-${job.data.agentId}-${Math.floor(Date.now() / 5000)}`
+      : undefined;
+  await globalForQueues.rentagentSystemQueue.add(job.name, job.data, { jobId });
 }

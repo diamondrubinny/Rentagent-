@@ -26,10 +26,13 @@ export type RunEvent =
       ok: boolean;
       detail: unknown;
     }
-  | { type: 'approval'; approvalId: string; toolName: string; input: unknown };
+  | { type: 'approval'; approvalId: string; toolName: string; input: unknown }
+  /** Text of the model step in progress so far (replaces, not appends). */
+  | { type: 'partial'; text: string };
 
 export const runChannel = (runId: string) => `run:${runId}`;
 const LOCK_SECONDS = 120;
+const PARTIAL_EVERY_MS = 150;
 
 type ToolCallPart = { type: 'tool-call'; toolCallId: string; toolName: string; input: unknown };
 
@@ -84,6 +87,8 @@ export function pendingToolCalls(messages: ModelMessage[]): ToolCallPart[] {
     }
   }
   if (lastAssistant === -1) return [];
+  // A newer user message means the previous turn is over: never replay its calls.
+  if (messages.slice(lastAssistant + 1).some((message) => message.role === 'user')) return [];
   const content = messages[lastAssistant]!.content;
   const calls = Array.isArray(content)
     ? (content.filter((part) => part.type === 'tool-call') as ToolCallPart[])
@@ -341,7 +346,17 @@ export async function executeRun(deps: RuntimeDeps, runId: string): Promise<Exec
         return finish('FAILED', { errorKind: 'budget' });
       }
 
-      // 3. Model step.
+      // 3. Model step (streamed: partial text is published at most every 150 ms).
+      let partial = '';
+      let lastPartialAt = 0;
+      const onTextDelta = (delta: string) => {
+        partial += delta;
+        const now = Date.now();
+        if (now - lastPartialAt >= PARTIAL_EVERY_MS) {
+          lastPartialAt = now;
+          void publish({ type: 'partial', text: partial });
+        }
+      };
       let result;
       try {
         result = await generate(
@@ -353,6 +368,7 @@ export async function executeRun(deps: RuntimeDeps, runId: string): Promise<Exec
             tools: Object.keys(toolSchemas).length ? toolSchemas : undefined,
             maxOutputTokens: config.limits.maxOutputTokens,
             temperature: config.temperature ?? undefined,
+            onTextDelta,
           },
           {
             purpose: run.mode === 'PREVIEW' ? 'agent_preview' : 'agent',

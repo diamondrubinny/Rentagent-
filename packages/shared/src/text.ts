@@ -18,3 +18,25 @@ export function normalizeSingleLine(value: string): string {
     .replace(/[\r\n\t]+/g, ' ')
     .trim();
 }
+
+/**
+ * Folds text for language-independent matching: compatibility decomposition,
+ * no combining marks (Latin accents, Hebrew niqqud, Arabic harakat), no Arabic
+ * tatweel, lower case and single spaces. Used on both stored text and queries.
+ */
+export function foldForSearch(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
+    .replace(/\u0640/g, '')
+    .toLocaleLowerCase('und')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+/** Distinct search terms of a query (at most 8, each at least 2 characters). */
+export function searchTerms(query: string): string[] {
+  return [...new Set(foldForSearch(query).split(' '))]
+    .filter((term) => term.length >= 2)
+    .slice(0, 8);
+}

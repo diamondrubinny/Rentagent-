@@ -124,8 +124,9 @@ model User {
   accounts   Account[]
   twoFactors TwoFactor[]
   usage      UsageRecord[]
-  runs       Run[]
-  files      File[]
+  runs          Run[]
+  files         File[]
+  conversations Conversation[]
 
   @@index([role])
   @@index([createdAt])
@@ -380,15 +381,22 @@ model Agent {
   draft              Json
   publishedVersionId String?     @map("published_version_id") @db.Uuid
   templateKey        String?     @map("template_key") @db.VarChar(60)
+  /// Shown first in the catalog and on the home page.
+  featured           Boolean     @default(false)
+  /// Folded name/description in every language (see foldForSearch).
+  searchText         String      @default("") @map("search_text")
+  /// Semantic search vector (embedding model set by the operator); dimension varies by model.
+  embedding          Unsupported("vector")?
   createdById        String?     @map("created_by_id") @db.VarChar(64)
   createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  versions  AgentVersion[]
-  runs      Run[]
-  knowledge KnowledgeSource[]
+  versions      AgentVersion[]
+  runs          Run[]
+  knowledge     KnowledgeSource[]
+  conversations Conversation[]
 
-  @@index([status])
+  @@index([status, featured])
   @@map("agents")
 }
 
@@ -467,6 +475,12 @@ model Run {
   /// Exact configuration used (draft previews have no version).
   config         Json
   userId         String?   @map("user_id") @db.VarChar(64)
+  conversationId String?   @map("conversation_id") @db.Uuid
+  /// Follow-up text typed by the user (the first turn uses the task form `input`).
+  userMessage    String?   @map("user_message")
+  /// End-user feedback: 1 = helpful, -1 = not helpful.
+  rating         Int?      @db.SmallInt
+  feedback       String?   @db.VarChar(1000)
   mode           RunMode   @default(PREVIEW)
   status         RunStatus @default(QUEUED)
   locale         String    @db.VarChar(35)
@@ -487,10 +501,12 @@ model Run {
 
   agent     Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
   version   AgentVersion? @relation(fields: [agentVersionId], references: [id], onDelete: SetNull)
-  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  steps     RunStep[]
-  approvals Approval[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  steps        RunStep[]
+  approvals    Approval[]
 
+  @@index([conversationId, createdAt])
   @@index([agentId, createdAt])
   @@index([userId, createdAt])
   @@index([status])
@@ -502,6 +518,24 @@ enum RunStepType {
   TOOL
   APPROVAL
   SYSTEM
+}
+
+/// An end-user chat with one agent; every turn is a LIVE run.
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.VarChar(64)
+  agentId   String   @map("agent_id") @db.Uuid
+  title     String   @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  runs  Run[]
+
+  @@index([userId, updatedAt])
+  @@index([updatedAt])
+  @@map("conversations")
 }
 
 model RunStep {

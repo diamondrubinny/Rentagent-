@@ -20,8 +20,20 @@ export async function SiteHeader({ siteName }: { siteName: string }) {
         </Link>
         {site.setupComplete && (
           <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {(site.catalogPublic || user) && (
+              <li>
+                <Link className="link" href="/agents">
+                  {t('agents')}
+                </Link>
+              </li>
+            )}
             {user ? (
               <>
+                <li>
+                  <Link className="link" href="/chats">
+                    {t('chats')}
+                  </Link>
+                </li>
                 {can(user.role, 'admin.access') && (
                   <li>
                     <Link className="link" href="/admin">

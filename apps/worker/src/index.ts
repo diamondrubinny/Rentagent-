@@ -4,6 +4,7 @@ import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { executeRun, type RuntimeDeps } from '@rentagent/agent-runtime';
 import { createFileWorker } from './files';
+import { indexAgent, purgeExpired, reindexAgents } from './maintenance';
 import { createMailWorker } from './mail';
 
 const HEARTBEAT_KEY = 'worker:heartbeat';
@@ -41,6 +42,15 @@ const workers: Worker[] = [
       switch (job.name) {
         case 'heartbeat':
           await beat();
+          return;
+        case 'index-agent':
+          await indexAgent(runtimeDeps, (job.data as { agentId: string }).agentId);
+          return;
+        case 'reindex-agents':
+          log.info({ agents: await reindexAgents(runtimeDeps) }, 'agents reindexed');
+          return;
+        case 'retention':
+          await purgeExpired(runtimeDeps);
           return;
         default:
           throw new Error(`Unknown system job: ${job.name}`);
@@ -82,6 +92,14 @@ async function main(): Promise<void> {
     { every: HEARTBEAT_EVERY_MS },
     { name: 'heartbeat', opts: { removeOnComplete: true, removeOnFail: 100 } },
   );
+  await systemQueue.upsertJobScheduler(
+    'retention',
+    { every: 60 * 60 * 1000, immediately: true },
+    { name: 'retention', opts: { removeOnComplete: true, removeOnFail: 100 } },
+  );
+  // Agents created before search indexing existed (or restored from a backup).
+  if (await db.agent.count({ where: { searchText: '' } }))
+    await systemQueue.add('reindex-agents', {}, { removeOnComplete: true, removeOnFail: 100 });
   log.info({ version: env.RENTAGENT_VERSION }, 'worker started');
 }
 

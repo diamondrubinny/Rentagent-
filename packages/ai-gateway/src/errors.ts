@@ -23,7 +23,19 @@ export interface ClassifiedError {
  * Normalizes provider errors. Raw messages are never surfaced to end users because
  * they can contain request details; only the kind is.
  */
+/**
+ * Wraps an error raised after part of a streamed answer was already delivered:
+ * switching to another model then would produce a mixed answer, so no fallback.
+ */
+export class AfterOutputError extends Error {
+  constructor(readonly inner: unknown) {
+    super('failed after output started');
+    this.name = 'AfterOutputError';
+  }
+}
+
 export function classifyError(error: unknown): ClassifiedError {
+  if (error instanceof AfterOutputError) return { ...classifyError(error.inner), fallback: false };
   if (APICallError.isInstance(error)) {
     const status = error.statusCode;
     if (status === 401 || status === 403) return { kind: 'auth', fallback: true, status };

@@ -1,6 +1,6 @@
 import { APICallError } from 'ai';
 import { describe, expect, it } from 'vitest';
-import { classifyError } from '../src/errors';
+import { AfterOutputError, classifyError } from '../src/errors';
 import { AllCandidatesFailedError, orderCandidates, runWithFallback } from '../src/router';
 
 const apiError = (statusCode: number, responseBody = '') =>
@@ -93,5 +93,26 @@ describe('runWithFallback', () => {
     ).rejects.toMatchObject({
       attempts: [{ candidate: 'a' }, { candidate: 'b' }],
     });
+  });
+});
+
+describe('streamed answers', () => {
+  it('keeps the error kind but never falls back after output started', () => {
+    expect(classifyError(new AfterOutputError(apiError(503)))).toEqual({
+      kind: 'server',
+      fallback: false,
+      status: 503,
+    });
+  });
+
+  it('stops the chain at the first candidate that already produced output', async () => {
+    const tried: string[] = [];
+    await expect(
+      runWithFallback(['a', 'b'], async (candidate) => {
+        tried.push(candidate);
+        throw new AfterOutputError(apiError(500));
+      }),
+    ).rejects.toBeInstanceOf(AllCandidatesFailedError);
+    expect(tried).toEqual(['a']);
   });
 });

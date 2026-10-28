@@ -1,9 +1,10 @@
 'use client';
 
 import type { AgentInputField } from '@rentagent/shared';
+import { TaskFields } from '@/components/task-fields';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
-import { FormMessage, SubmitButton, TextField } from '@/components/forms';
+import { FormMessage, SubmitButton } from '@/components/forms';
 import { useAction } from '@/components/use-action';
 import { useRouter } from '@/i18n/navigation';
 import { startPreviewRun } from '../../actions';
@@ -14,86 +15,6 @@ interface PreviewFormProps {
   draftFields: AgentInputField[];
   publishedFields: AgentInputField[] | null;
   publishedVersion: number | null;
-}
-
-/** Renders the agent's task form; shared with the end-user run form in phase 5. */
-export function TaskFields({
-  fields,
-  errors,
-}: {
-  fields: AgentInputField[];
-  errors: Record<string, string>;
-}) {
-  const tValidation = useTranslations('Validation');
-  const error = (key: string) =>
-    errors[key]
-      ? tValidation.has(errors[key])
-        ? tValidation(errors[key])
-        : errors[key]
-      : undefined;
-  return (
-    <>
-      {fields.map((field) => {
-        const label = `${field.label}${field.required ? ' *' : ''}`;
-        if (field.type === 'textarea' || field.type === 'select') {
-          const id = `task-${field.key}`;
-          const errorId = `${id}-error`;
-          return (
-            <div key={field.key}>
-              <label htmlFor={id} className="mb-1 block font-semibold" dir="auto">
-                {label}
-              </label>
-              {field.type === 'textarea' ? (
-                <textarea
-                  id={id}
-                  name={field.key}
-                  rows={6}
-                  required={field.required}
-                  dir="auto"
-                  className="field-input py-2"
-                  aria-invalid={Boolean(error(field.key))}
-                  aria-describedby={error(field.key) ? errorId : undefined}
-                />
-              ) : (
-                <select
-                  id={id}
-                  name={field.key}
-                  required={field.required}
-                  className="field-input"
-                  aria-invalid={Boolean(error(field.key))}
-                  aria-describedby={error(field.key) ? errorId : undefined}
-                >
-                  {!field.required && <option value="" />}
-                  {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {error(field.key) && (
-                <p id={errorId} className="mt-1 text-sm font-semibold text-danger">
-                  {error(field.key)}
-                </p>
-              )}
-            </div>
-          );
-        }
-        return (
-          <TextField
-            key={field.key}
-            name={field.key}
-            label={label}
-            type={field.type === 'number' ? 'text' : field.type}
-            inputMode={field.type === 'number' ? 'decimal' : undefined}
-            required={field.required}
-            dir={field.type === 'text' ? 'auto' : 'ltr'}
-            error={error(field.key)}
-          />
-        );
-      })}
-    </>
-  );
 }
 
 export function PreviewForm({

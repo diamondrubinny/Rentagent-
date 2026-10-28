@@ -5,6 +5,7 @@ import { db } from '@/lib/server/runtime';
 import { requirePermission } from '@/lib/server/session';
 import { getSiteConfig } from '@/lib/server/site';
 import { SettingsForm } from './settings-form';
+import { UsageSettingsForm } from './usage-form';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -21,6 +22,7 @@ export default async function AdminSettingsPage({ params }: PageProps) {
   setRequestLocale(locale);
   await requirePermission(locale, 'settings.manage', '/admin/settings');
   const t = await getTranslations('Admin.settings');
+  const tUsage = await getTranslations('Admin.usageSettings');
   const site = await getSiteConfig();
   const mode = (await getSetting(db(), 'auth.registrationMode')) ?? 'closed';
   return (
@@ -29,6 +31,19 @@ export default async function AdminSettingsPage({ params }: PageProps) {
         {t('title')}
       </h1>
       <SettingsForm siteName={site.name} registrationMode={mode} smtpEnabled={site.smtpEnabled} />
+      <section
+        aria-labelledby="usage-settings-title"
+        className="space-y-4 border-t border-border pt-6"
+      >
+        <h2 id="usage-settings-title" className="text-2xl font-bold">
+          {tUsage('title')}
+        </h2>
+        <UsageSettingsForm
+          catalogPublic={site.catalogPublic}
+          userDailyRunLimit={site.userDailyRunLimit}
+          runRetentionDays={site.runRetentionDays}
+        />
+      </section>
     </section>
   );
 }

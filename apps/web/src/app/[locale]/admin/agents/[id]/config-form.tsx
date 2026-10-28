@@ -58,6 +58,8 @@ export function ConfigForm({ agentId, initial, targets, customTools, locales }: 
   );
   const [domains, setDomains] = useState(initial.fetchAllowedDomains.join('\n'));
   const [outputFormat, setOutputFormat] = useState(initial.outputFormat);
+  const [followUps, setFollowUps] = useState(initial.conversation.followUps);
+  const [historyTurns, setHistoryTurns] = useState(String(initial.conversation.historyTurns));
   const [announcement, setAnnouncement] = useState('');
 
   const errorsFor = (prefix: string) =>
@@ -120,6 +122,7 @@ export function ConfigForm({ agentId, initial, targets, customTools, locales }: 
         .filter(Boolean),
       outputFormat,
       temperature: temperature.trim() === '' ? null : number(temperature),
+      conversation: { followUps, historyTurns: number(historyTurns) },
     };
   }
 
@@ -467,6 +470,39 @@ export function ConfigForm({ agentId, initial, targets, customTools, locales }: 
             </label>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="mb-2 text-lg font-bold">{t('conversation')}</legend>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 size-5"
+            checked={followUps}
+            onChange={(event) => setFollowUps(event.target.checked)}
+          />
+          <span>
+            <span className="block font-semibold">{t('followUps')}</span>
+            <span className="block text-sm text-muted">{t('followUpsHint')}</span>
+          </span>
+        </label>
+        <label className="block max-w-xs">
+          <span className="mb-1 block font-semibold">{t('historyTurns')}</span>
+          <span className="mb-1 block text-sm text-muted">{t('historyTurnsHint')}</span>
+          <input
+            value={historyTurns}
+            onChange={(event) => setHistoryTurns(event.target.value)}
+            inputMode="numeric"
+            dir="ltr"
+            disabled={!followUps}
+            className="field-input"
+          />
+        </label>
+        {errorsFor('conversation').map((message) => (
+          <p key={message} className="text-sm font-semibold text-danger">
+            {message}
+          </p>
+        ))}
       </fieldset>
 
       <SubmitButton pending={pending} pendingLabel={t('saving')}>

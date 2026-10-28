@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { canonicalizeLocale } from './i18n';
-import { normalizeSingleLine } from './text';
+import { foldForSearch, normalizeSingleLine } from './text';
 
 export const BUILTIN_TOOLS = [
   'calculator',
@@ -91,6 +91,14 @@ export const agentConfigSchema = z
     fetchAllowedDomains: z.array(hostname).max(50),
     outputFormat: z.enum(['markdown', 'text']),
     temperature: z.number().min(0).max(2).nullable(),
+    /** Follow-up messages after the first task; older configs get the defaults. */
+    conversation: z
+      .object({
+        followUps: z.boolean(),
+        /** Previous turns (user message + answer) sent with each follow-up. */
+        historyTurns: z.number().int().min(1).max(50),
+      })
+      .default({ followUps: true, historyTurns: 10 }),
   })
   .superRefine((config, ctx) => {
     const toolIds = config.tools.map((tool) => tool.id);
@@ -131,6 +139,7 @@ export function defaultAgentConfig(): AgentConfig {
     fetchAllowedDomains: [],
     outputFormat: 'markdown',
     temperature: null,
+    conversation: { followUps: true, historyTurns: 10 },
   };
 }
 
@@ -150,6 +159,42 @@ export const agentMetaSchema = z.object({
     )
     .default({}),
 });
+
+export type AgentLocalizations = Record<string, { name?: string; description?: string }>;
+
+/** Everything a visitor might search for, in every language the agent is described in. */
+export function agentSearchDocument(agent: {
+  name: string;
+  description: string;
+  localizations: unknown;
+  category?: string;
+}): string {
+  const localized = Object.values((agent.localizations ?? {}) as AgentLocalizations);
+  return [
+    agent.name,
+    agent.description,
+    ...localized.flatMap((l) => [l.name, l.description]),
+    agent.category,
+  ]
+    .filter((part): part is string => typeof part === 'string' && part.trim() !== '')
+    .join('\n');
+}
+
+/** Folded search column value (see foldForSearch). */
+export const agentSearchText = (agent: Parameters<typeof agentSearchDocument>[0]) =>
+  foldForSearch(agentSearchDocument(agent));
+
+/** Name and description in the visitor's language, falling back to the defaults. */
+export function localizedAgent(
+  agent: { name: string; description: string; localizations: unknown },
+  locale: string,
+): { name: string; description: string } {
+  const localized = ((agent.localizations ?? {}) as AgentLocalizations)[locale];
+  return {
+    name: localized?.name?.trim() || agent.name,
+    description: localized?.description?.trim() || agent.description,
+  };
+}
 
 /** Portable agent definition for import/export between installations. */
 export const agentExportSchema = agentMetaSchema.extend({

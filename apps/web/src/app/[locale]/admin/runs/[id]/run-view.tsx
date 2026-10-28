@@ -10,6 +10,8 @@ import { cancelRun, decideApproval } from '../../agents/actions';
 interface Snapshot {
   id: string;
   agentName: string;
+  mode: string;
+  ownerId: string | null;
   status: string;
   errorKind: string | null;
   output: string | null;
@@ -29,7 +31,7 @@ interface Snapshot {
 
 const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'CANCELED']);
 
-export function RunView({ runId }: { runId: string }) {
+export function RunView({ runId, viewerId }: { runId: string; viewerId: string }) {
   const t = useTranslations('AdminAgents.run');
   const tStatus = useTranslations('AdminAgents.runStatus');
   const tErrors = useTranslations('AdminAgents.errors');
@@ -39,12 +41,17 @@ export function RunView({ runId }: { runId: string }) {
   const action = useAction();
   const statusRef = useRef<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [partial, setPartial] = useState('');
+  const modelSteps = useRef(0);
 
   useEffect(() => {
     const source = new EventSource(`/api/admin/runs/${runId}/events`);
     source.onmessage = (event) => {
       const next = JSON.parse(event.data) as Snapshot;
       setSnapshot(next);
+      const models = next.steps.filter((step) => step.stepType === 'MODEL').length;
+      if (models !== modelSteps.current || TERMINAL.has(next.status)) setPartial('');
+      modelSteps.current = models;
       if (statusRef.current !== next.status) {
         statusRef.current = next.status;
         setAnnouncement(tStatus(next.status));
@@ -54,6 +61,9 @@ export function RunView({ runId }: { runId: string }) {
         setConnection('closed');
       }
     };
+    source.addEventListener('partial', (event) =>
+      setPartial((JSON.parse((event as MessageEvent<string>).data) as { text: string }).text),
+    );
     source.onerror = () => {
       if (source.readyState === EventSource.CLOSED)
         setConnection(TERMINAL.has(statusRef.current ?? '') ? 'closed' : 'error');
@@ -97,39 +107,49 @@ export function RunView({ runId }: { runId: string }) {
         <FormMessage tone="error">{tErrors(action.outcome.error)}</FormMessage>
       )}
 
-      {pendingApprovals.map((approval) => (
-        <section
-          key={approval.id}
-          aria-labelledby={`approval-${approval.id}`}
-          className="space-y-3 rounded-lg border-2 border-danger bg-warning-bg p-4"
-        >
-          <h2 id={`approval-${approval.id}`} className="text-lg font-bold">
-            {t('approvalTitle', { tool: approval.toolName })}
-          </h2>
-          <p>{t('approvalIntro')}</p>
-          <pre dir="ltr" className="overflow-x-auto whitespace-pre-wrap rounded bg-bg p-3 text-sm">
-            {JSON.stringify(approval.input, null, 2)}
-          </pre>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={action.pending}
-              onClick={() => action.run(() => decideApproval(approval.id, true))}
+      {pendingApprovals.length > 0 && snapshot.ownerId !== viewerId && (
+        <p className="rounded-lg border-2 border-border bg-warning-bg p-4">
+          {t('approvalByOwner')}
+        </p>
+      )}
+
+      {snapshot.ownerId === viewerId &&
+        pendingApprovals.map((approval) => (
+          <section
+            key={approval.id}
+            aria-labelledby={`approval-${approval.id}`}
+            className="space-y-3 rounded-lg border-2 border-danger bg-warning-bg p-4"
+          >
+            <h2 id={`approval-${approval.id}`} className="text-lg font-bold">
+              {t('approvalTitle', { tool: approval.toolName })}
+            </h2>
+            <p>{t('approvalIntro')}</p>
+            <pre
+              dir="ltr"
+              className="overflow-x-auto whitespace-pre-wrap rounded bg-bg p-3 text-sm"
             >
-              {t('approve')}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={action.pending}
-              onClick={() => action.run(() => decideApproval(approval.id, false))}
-            >
-              {t('reject')}
-            </button>
-          </div>
-        </section>
-      ))}
+              {JSON.stringify(approval.input, null, 2)}
+            </pre>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={action.pending}
+                onClick={() => action.run(() => decideApproval(approval.id, true))}
+              >
+                {t('approve')}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={action.pending}
+                onClick={() => action.run(() => decideApproval(approval.id, false))}
+              >
+                {t('reject')}
+              </button>
+            </div>
+          </section>
+        ))}
 
       {running && (
         <button
@@ -140,6 +160,19 @@ export function RunView({ runId }: { runId: string }) {
         >
           {t('cancel')}
         </button>
+      )}
+
+      {running && partial && (
+        <section
+          aria-labelledby="run-partial"
+          aria-busy="true"
+          className="rounded-lg border border-border p-4"
+        >
+          <h2 id="run-partial" className="mb-3 text-xl font-bold">
+            {t('writing')}
+          </h2>
+          <Markdown>{partial}</Markdown>
+        </section>
       )}
 
       {snapshot.output && (

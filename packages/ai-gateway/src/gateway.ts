@@ -12,7 +12,7 @@ import {
 } from 'ai';
 import type { Redis } from 'ioredis';
 import type { ProviderTypeName } from './catalog';
-import { classifyError, type ClassifiedError, type ErrorKind } from './errors';
+import { AfterOutputError, classifyError, type ClassifiedError, type ErrorKind } from './errors';
 import { createEmbeddingModel, createLanguageModel, type ProviderConnection } from './factory';
 import { costMicros } from './pricing';
 import { orderCandidates, runWithFallback, type Strategy } from './router';
@@ -52,6 +52,11 @@ export interface GenerationInput {
    * to the caller (the agent runtime), which decides, asks for approval, and executes.
    */
   tools?: Record<string, { description: string; inputSchema: JSONSchema7 }>;
+  /**
+   * Receives text as it is generated (streaming). Fallback to another candidate
+   * happens only before the first delta.
+   */
+  onTextDelta?: (delta: string) => void;
 }
 
 export interface ToolCallRequest {
@@ -330,6 +335,54 @@ function toolSetOf(tools: GenerationInput['tools']) {
   );
 }
 
+/** The parts of a generation result the gateway uses, from either API. */
+interface GenerationOutcome {
+  text: string;
+  toolCalls: Array<{ toolCallId: string; toolName: string; input: unknown }>;
+  responseMessages: unknown[];
+  finishReason: string;
+  usage: { inputTokens?: number; outputTokens?: number };
+}
+
+/** One streamed attempt; errors after the first delta are not retried on another model. */
+async function streamed(
+  deps: GatewayDeps,
+  candidate: Candidate,
+  input: GenerationInput,
+  onTextDelta: (delta: string) => void,
+): Promise<GenerationOutcome> {
+  let emitted = false;
+  try {
+    const result = streamText({
+      model: createLanguageModel(connectionFor(deps, candidate), candidate.model.modelId),
+      ...promptOf(input),
+      tools: toolSetOf(input.tools),
+      maxOutputTokens: input.maxOutputTokens,
+      temperature: input.temperature,
+      maxRetries: 0,
+      abortSignal: AbortSignal.timeout(input.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+    });
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') {
+        emitted = true;
+        onTextDelta(part.text);
+      } else if (part.type === 'error') {
+        throw part.error;
+      }
+    }
+    const [text, toolCalls, responseMessages, finishReason, usage] = await Promise.all([
+      result.text,
+      result.toolCalls,
+      result.responseMessages,
+      result.finishReason,
+      result.totalUsage,
+    ]);
+    return { text, toolCalls, responseMessages, finishReason, usage };
+  } catch (error) {
+    throw emitted ? new AfterOutputError(error) : error;
+  }
+}
+
 export interface GenerateResult extends CallSummary {
   text: string;
   toolCalls: ToolCallRequest[];
@@ -352,15 +405,17 @@ export async function generate(
       candidates,
       async (candidate, attempt) => {
         const started = Date.now();
-        const response = await generateText({
-          model: createLanguageModel(connectionFor(deps, candidate), candidate.model.modelId),
-          ...promptOf(input),
-          tools: toolSetOf(input.tools),
-          maxOutputTokens: input.maxOutputTokens,
-          temperature: input.temperature,
-          maxRetries: 0, // retries are handled by the fallback chain
-          abortSignal: AbortSignal.timeout(input.timeoutMs ?? DEFAULT_TIMEOUT_MS),
-        });
+        const response = input.onTextDelta
+          ? await streamed(deps, candidate, input, input.onTextDelta)
+          : await generateText({
+              model: createLanguageModel(connectionFor(deps, candidate), candidate.model.modelId),
+              ...promptOf(input),
+              tools: toolSetOf(input.tools),
+              maxOutputTokens: input.maxOutputTokens,
+              temperature: input.temperature,
+              maxRetries: 0, // retries are handled by the fallback chain
+              abortSignal: AbortSignal.timeout(input.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+            });
         const latencyMs = Date.now() - started;
         const usage = {
           inputTokens: response.usage.inputTokens ?? 0,
