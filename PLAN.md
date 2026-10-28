@@ -28,7 +28,7 @@
 
 ### הנחות
 1. השרת של הלקוח הוא VPS או שרת ייעודי עם Linux ו־Docker (ראו סעיף 4). כל הרכיבים רצים אצלו; אין תלות בענן שלך.
-2. עברית (RTL) ואנגלית מובנות; המפעיל יכול להוסיף שפות.
+2. **המערכת רב־לשונית לחלוטין** (סעיף 3.8): הסוכנים מבינים כל שפה ועונים בשפת המשתמש; הממשק נשלח עם עברית, אנגלית, ערבית ורוסית (מוכנות לבדיקת דובר שפת אם), והמפעיל יכול להוסיף כל שפה, כולל תרגום אוטומטי של הממשק בעזרת ה־AI.
 3. כל המידע של המפעיל ושל המשתמשים שלו נשאר על השרת שלו. אצלך (Vendor) עוברים רק בדיקת רישיון ובדיקת עדכונים — בלי מידע אישי.
 4. תשלומים: מודולים נפרדים (Stripe ראשון), כך שהמפעיל יכול גם לכבות תשלומים ולהשתמש במערכת לשימוש פנימי בלבד.
 
@@ -105,6 +105,37 @@
 - הגדרות: פרופיל, 2FA, Sessions, ייצוא ומחיקת מידע **[MVP]**
 - Widget להטמעה באתר של המפעיל, WhatsApp, Telegram, Slack **[V2]**
 - API ציבורי עם API keys **[V2]**
+
+### 3.8 רב־לשוניות — "מבין את כל השפות"
+
+שלוש שכבות נפרדות, וכל אחת מטופלת אחרת:
+
+**א. הסוכנים מבינים ועונים בכל שפה** **[MVP]**
+- זיהוי שפת הקלט אוטומטית (ספרייה מקומית כמו `franc`/`cld3` — **דורש אימות** דיוק בטקסטים קצרים) ותשובה באותה שפה כברירת מחדל.
+- מדיניות שפה לכל סוכן: "עונה בשפת המשתמש" / "תמיד בשפה X" / "שפת הממשק של המשתמש".
+- ההנחיות (instructions) של הסוכן נכתבות פעם אחת, בכל שפה; המערכת מוסיפה להן הוראת שפה אוטומטית.
+- משתמש יכול לכתוב בשפה אחת ולבקש תוצר בשפה אחרת (תרגום, לוקליזציה).
+- המפעיל רואה לכל מודל אילו שפות הוא טוען שהוא תומך בהן (שדה ב־Registry), ויכול לנתב שפות מסוימות למודל מסוים (למשל עברית → מודל שעובד טוב בעברית).
+
+**ב. ידע ומסמכים בכל שפה (RAG)** **[MVP]**
+- מודל Embeddings רב־לשוני לבחירת המפעיל (מספק ענן או מקומי, למשל BGE-M3 דרך Ollama — **דורש אימות** תמיכה). כך שאלה בעברית מוצאת מסמך באנגלית ולהפך.
+- עיבוד מסמכים עם נרמול Unicode (NFC), תמיכה בכל הכתבים, וחיתוך שלא שובר מילים בשפות בלי רווחים (סינית, יפנית, תאית).
+- OCR רב־לשוני לקבצים סרוקים **[V2]**.
+
+**ג. ממשק בכל שפה** **[MVP]**
+- כל המחרוזות בקבצי ICU MessageFormat (רבים, מגדר, משתנים) — בלי טקסט קשיח בקוד.
+- RTL אוטומטי לכל שפה מימין לשמאל (עברית, ערבית, פרסית, אורדו ועוד) לפי ה־locale, עם CSS logical properties בכל הרכיבים.
+- טקסט מעורב (עברית + אנגלית + מספרים + קוד) מוצג נכון: `dir="auto"` ו־Unicode bidi isolation בהודעות צ'אט ובשמות משתמשים.
+- תאריכים, מספרים, מטבעות ואזורי זמן דרך `Intl` לפי השפה והמדינה.
+- פונטים: משפחת Noto כגיבוי לכל הכתבים, נטענת רק לפי שפה (בלי לפגוע בביצועים).
+- חיפוש בקטלוג שעובד בכל שפה (Postgres full-text עם `simple` + trigram, ובעתיד חיפוש סמנטי).
+- המפעיל מוסיף שפה בלחיצה: תרגום אוטומטי של המחרוזות דרך ה־AI שהוגדר, עם סימון "ממתין לבדיקה" ועריכה ידנית.
+- שם, תיאור ודוגמאות של כל סוכן ניתנים לתרגום, עם תרגום אוטומטי אופציונלי.
+- תבניות מייל ודפים משפטיים לכל שפה.
+
+**ד. קול ושפות מדוברות** **[V3]** — דיבור לטקסט וטקסט לדיבור רב־לשוני, לפי ספק שהמפעיל הגדיר.
+
+**מגבלה שחשוב לדעת:** איכות ההבנה תלויה במודל שהמפעיל בחר. מודלים גדולים חזקים מאוד בשפות נפוצות ופחות בשפות עם מעט משאבים. המערכת תומכת בכל שפה טכנית, אבל איכות התשובה לא מובטחת באותה רמה בכל שפה. מומלץ לבדוק בשפות היעד לפני שמשווקים.
 
 ### 3.7 רישוי (צד ה־Vendor)
 - License key שנבדק בהתקנה ואחת לתקופה; עבודה אופליין לתקופת חסד; Tiers לפי רישיון (כמות משתמשים, White-label, מודולים) **[MVP]**
@@ -200,7 +231,9 @@ sudo bash install.sh
 | אריזה | Docker Compose + Caddy | התקנה אחידה בכל שרת, HTTPS אוטומטי | Kubernetes/Helm (ל־V3 Enterprise) | דורש VPS, לא Shared hosting |
 | Web | Next.js (App Router), build מסוג standalone | UI ו־API יחד, SSR לקטלוג | Remix; Laravel (אם חייבים PHP) | — |
 | UI | Tailwind + shadcn/ui (Radix) | נגיש, RTL עם logical properties, מיתוג עם CSS variables | MUI | — |
-| i18n | next-intl + overrides מה־DB | המפעיל עורך מחרוזות | i18next | — |
+| i18n | next-intl (ICU) + overrides ו־locales נוספים מה־DB | כל שפה, RTL אוטומטי, המפעיל עורך ומוסיף | i18next | שפות שנוספו ב־DB נטענות בזמן ריצה, לא ב־build |
+| זיהוי שפה | ספרייה מקומית (franc/cld3) | מהיר, בלי לשלוח מידע החוצה | זיהוי דרך ה־LLM | פחות מדויק בטקסטים קצרים מאוד |
+| Embeddings | רב־לשוני, לבחירת המפעיל | חיפוש בין שפות | מודל לכל שפה | החלפת מודל דורשת אינדוקס מחדש |
 | DB | PostgreSQL + Prisma + pgvector | רלציוני + וקטורי בקונטיינר אחד | Drizzle; Qdrant | — |
 | Queue | Redis + BullMQ | ריצות ארוכות, retries, cron | Temporal | Temporal כבד מדי להתקנה אצל לקוח |
 | AI | Vercel AI SDK + OpenAI-compatible adapter | ממשק אחיד, Streaming, Tools | LiteLLM (Python, שירות נוסף) | **דורש אימות** תמיכה לכל ספק |
@@ -217,7 +250,8 @@ sudo bash install.sh
 ```
 — מערכת והגדרות
 Setting(key, value json, updatedBy, updatedAt)          — מיתוג, flags, מייל, מדיניות
-Translation(locale, key, value)                          — overrides למחרוזות
+Locale(code, name, nativeName, dir: LTR|RTL, enabled, isDefault, fontFamily)
+Translation(locale, key, value, status: AUTO|REVIEWED)   — overrides ושפות שנוספו
 License(key, tier, features json, validUntil, lastCheckAt)
 
 — משתמשים
@@ -231,17 +265,19 @@ Subscription(id, userId, planId, status, gateway, gatewayRef, periodEnd)
 — ספקים ומודלים
 Provider(id, type: OPENAI|ANTHROPIC|...|OPENAI_COMPATIBLE, name, baseUrl, enabled, settings json)
 ProviderKey(id, providerId, encryptedKey, keyVersion, last4, spendLimitCents, enabled)
-Model(id, providerId, modelId, displayName, capabilities json, contextWindow,
+Model(id, providerId, modelId, displayName, capabilities json, languages json, contextWindow,
       costInPer1M, costOutPer1M, priceInPer1M, priceOutPer1M, visibility, planIds, enabled)
 RoutingPolicy(id, name, strategy, chain json)
 
 — סוכנים
 Agent(id, slug, name, category, status: DRAFT|PUBLISHED|PAUSED|ARCHIVED, ownerId, ratingAvg)
 AgentVersion(id, agentId, version, instructions, routingPolicyId, tools json, inputSchema json,
-             outputFormat, pricing json, limits json, approvalRules json, publishedAt)
+             outputFormat, languagePolicy json, pricing json, limits json, approvalRules json, publishedAt)
+AgentLocalization(agentId, locale, name, description, examples json, status: AUTO|REVIEWED)
 Tool(id, type: BUILTIN|HTTP|OPENAPI|MCP, name, config json(encrypted secrets), enabled)
 McpServer(id, name, url, authEncrypted, enabled)
-KnowledgeSource(id, agentId, fileId, status) · Chunk(id, sourceId, content, embedding vector, meta)
+KnowledgeSource(id, agentId, fileId, status, embeddingModelId)
+Chunk(id, sourceId, content, lang, embedding vector, meta)
 
 — ריצות
 Rental(id, userId, agentVersionId, pricingModel, budgetCapCents, status, expiresAt)
@@ -369,11 +405,12 @@ rentagent/
 
 | שלב | תוצר | בדיקות |
 |-----|------|--------|
-| **1. תשתית והתקנה** | Monorepo, Docker Compose מלא, Caddy, Prisma schema, Next.js עם he/en ו־RTL, `install.sh`, CLI (status/backup/update), `REQUIREMENTS.md`, אשף הגדרה, כותרות אבטחה, דפי 404/500, CI | התקנה נקייה על Ubuntu ב־CI |
+| **1. תשתית והתקנה** | Monorepo, Docker Compose מלא, Caddy, Prisma schema, Next.js עם תשתית i18n מלאה (ICU, RTL אוטומטי, he/en/ar/ru, טעינת שפות מה־DB), `install.sh`, CLI (status/backup/update), `REQUIREMENTS.md`, אשף הגדרה, כותרות אבטחה, דפי 404/500, CI | התקנה נקייה על Ubuntu ב־CI |
 | **2. משתמשים והרשאות** | הרשמה, אימות מייל, איפוס, 2FA, OAuth, תפקידים והרשאות, Audit log, Rate limit | בדיקות הרשאות + BOLA |
 | **3. ספקי AI** | Admin ספקים ומפתחות (מוצפנים), בדיקת חיבור, Registry מודלים, נראות ומחירים, Routing ו־Fallback, Metering, Kill-switch | Mock providers + בדיקות חוזה |
-| **4. Agent Control Center** | Builder, תבניות, גרסאות, מדיניות, Runtime ב־worker, כלים (Fetch, HTTP/OpenAPI, MCP, מייל), אישור אנושי, SSE, Traces, RAG + קבצים עם סריקה, ניטור ובקרה | Integration |
-| **5. חוויית משתמש קצה** | קטלוג, עמוד סוכן, הפעלה, צ'אט, תוצרים, היסטוריה, הגדרות פרטיות | E2E Playwright + axe |
+| **4. Agent Control Center** | Builder, תבניות, גרסאות, מדיניות, זיהוי שפה ומדיניות שפה, Embeddings רב־לשוניים, Runtime ב־worker, כלים (Fetch, HTTP/OpenAPI, MCP, מייל), אישור אנושי, SSE, Traces, RAG + קבצים עם סריקה, ניטור ובקרה | Integration |
+| **5. חוויית משתמש קצה** | קטלוג, עמוד סוכן, הפעלה, צ'אט (bidi), תוצרים, היסטוריה, הגדרות פרטיות, חיפוש רב־לשוני | E2E Playwright + axe, בכל שפה RTL ו־LTR |
+| **5.5 שפות (Admin)** | ניהול שפות, עורך תרגומים, תרגום אוטומטי עם סימון לבדיקה, תרגום סוכנים | בדיקת מפתחות חסרים ב־CI, בדיקות RTL ויזואליות |
 | **6. התאמות ותשלומים** | מיתוג עם בדיקת ניגודיות, עריכת מחרוזות, Feature flags, תוכניות, Credits, Ledger, Stripe, Webhooks יוצאים | Race/idempotency |
 | **7. רישוי, Compliance והשקה** | License server + בדיקה במוצר, באנר עוגיות, טיוטות משפטיות, מדריך מפעיל, בדיקות עומס לאימות הדרישות, Checklist לפרודקשן | Security scan, SBOM, a11y |
 | V2+ | Sandbox לקוד ולדפדפן, Router ו־Supervisor, Cron ו־Triggers, ערוצים, BYOK למשתמשים, API ציבורי, Evals, תפקידים מותאמים, Plugins, Helm | — |
