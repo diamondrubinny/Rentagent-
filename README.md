@@ -6,7 +6,7 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 
 - Product plan and roadmap: [`PLAN.md`](PLAN.md) (Hebrew)
 - Server requirements for customers: [`deploy/REQUIREMENTS.md`](deploy/REQUIREMENTS.md)
-- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md)
+- Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md)
 
 ## Status
 
@@ -14,8 +14,10 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
   setup wizard, security headers, health checks, backup/update CLI.
 - Phase 2 (users): accounts, email verification, password reset, two-factor authentication,
   roles and permissions, admin user management, audit log, transactional email via the worker.
-- Next: AI providers (phase 3), agents (4), user experience (5), customization and billing (6),
-  licensing and compliance (7).
+- Phase 3 (AI providers): 15 provider types plus any OpenAI-compatible server, encrypted keys with
+  rotation/cooldown/monthly caps, model registry with costs and prices, routing policies with
+  fallback, streaming playground, usage metering, emergency stop.
+- Next: agents (4), user experience (5), customization and billing (6), licensing and compliance (7).
 
 ## Repository layout
 
@@ -25,6 +27,7 @@ apps/worker     Background worker (BullMQ), bundled into one file
 packages/core   Server utilities: env validation, AES-256-GCM secrets, logger, Redis, rate limit
 packages/db     Prisma 7 schema, migrations, typed settings
 packages/mail   Transactional email templates (all locales) and SMTP transport
+packages/ai-gateway  AI providers (Vercel AI SDK), discovery, routing/fallback, metering, SSRF guard
 packages/shared Isomorphic code: locales/RTL, money (ISO 4217 minor units), Zod schemas
 deploy/         Docker Compose stack, Caddy, installer, `rentagent` CLI, requirements
 scripts/        Release packaging

@@ -22,6 +22,7 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
+COPY packages/ai-gateway/package.json packages/ai-gateway/
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/mail/package.json packages/mail/

@@ -1,6 +1,7 @@
 // RentAgent database schema.
 // Phase 1: installation settings, locales/translations, audit log, consent records.
 // Phase 2: users, sessions, credentials, verification tokens, two-factor (Better Auth models).
+// Phase 3: AI providers, keys, model registry, routing policies, usage metering.
 // Later phases add users, providers, agents, runs and billing (see PLAN.md §7).
 
 generator client {
@@ -121,6 +122,7 @@ model User {
   sessions   Session[]
   accounts   Account[]
   twoFactors TwoFactor[]
+  usage      UsageRecord[]
 
   @@index([role])
   @@index([createdAt])
@@ -195,4 +197,160 @@ model TwoFactor {
   @@index([userId])
   @@index([secret])
   @@map("two_factors")
+}
+
+// ---------------------------------------------------------------- AI providers
+
+enum ProviderType {
+  OPENAI
+  ANTHROPIC
+  GOOGLE
+  MISTRAL
+  XAI
+  DEEPSEEK
+  GROQ
+  TOGETHER
+  FIREWORKS
+  PERPLEXITY
+  COHERE
+  OPENROUTER
+  AZURE_OPENAI
+  AMAZON_BEDROCK
+  OPENAI_COMPATIBLE
+}
+
+/// A configured connection to an AI vendor or OpenAI-compatible server.
+model Provider {
+  id        String       @id @default(uuid()) @db.Uuid
+  type      ProviderType
+  name      String       @db.VarChar(80)
+  /// Overrides the vendor default; required for OPENAI_COMPATIBLE.
+  baseUrl   String?      @map("base_url") @db.VarChar(500)
+  /// Non-secret vendor settings (e.g. Azure resource name/api version, Bedrock region).
+  settings  Json         @default("{}")
+  enabled   Boolean      @default(true)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  keys   ProviderKey[]
+  models AiModel[]
+  usage  UsageRecord[]
+
+  @@map("ai_providers")
+}
+
+/// API credential. `secretEncrypted` is AES-256-GCM bound to "provider-key:<id>".
+model ProviderKey {
+  id                 String    @id @default(uuid()) @db.Uuid
+  providerId         String    @map("provider_id") @db.Uuid
+  label              String    @db.VarChar(80)
+  secretEncrypted    String    @map("secret_encrypted")
+  last4              String    @db.VarChar(8)
+  enabled            Boolean   @default(true)
+  /// Monthly spend cap in micro-USD (provider cost); null = unlimited.
+  monthlyLimitMicros BigInt?   @map("monthly_limit_micros")
+  lastUsedAt         DateTime? @map("last_used_at") @db.Timestamptz(3)
+  lastErrorAt        DateTime? @map("last_error_at") @db.Timestamptz(3)
+  lastErrorKind      String?   @map("last_error_kind") @db.VarChar(40)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  usage    UsageRecord[]
+
+  @@index([providerId])
+  @@map("ai_provider_keys")
+}
+
+enum ModelKind {
+  CHAT
+  EMBEDDING
+}
+
+/// Model registry entry. Costs are what the provider charges (USD per 1M tokens);
+/// prices are what end users are charged (installation base currency per 1M tokens).
+model AiModel {
+  id              String    @id @default(uuid()) @db.Uuid
+  providerId      String    @map("provider_id") @db.Uuid
+  modelId         String    @map("model_id") @db.VarChar(200)
+  displayName     String    @map("display_name") @db.VarChar(120)
+  kind            ModelKind @default(CHAT)
+  /// { tools, vision, json, reasoning } booleans
+  capabilities    Json      @default("{}")
+  contextWindow   Int?      @map("context_window")
+  /// BCP 47 language codes the operator verified; empty = not specified.
+  languages       String[]  @default([])
+  costInPer1M     Decimal?  @map("cost_in_per_1m") @db.Decimal(14, 6)
+  costOutPer1M    Decimal?  @map("cost_out_per_1m") @db.Decimal(14, 6)
+  priceInPer1M    Decimal?  @map("price_in_per_1m") @db.Decimal(14, 6)
+  priceOutPer1M   Decimal?  @map("price_out_per_1m") @db.Decimal(14, 6)
+  /// Visible to end users (agents may still use hidden models).
+  visible         Boolean   @default(false)
+  enabled         Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  usage    UsageRecord[]
+
+  @@unique([providerId, modelId])
+  @@map("ai_models")
+}
+
+enum RoutingStrategy {
+  FIXED
+  CHEAPEST
+  FASTEST
+}
+
+/// Ordered fallback chain of model ids (AiModel.id) with a selection strategy.
+model RoutingPolicy {
+  id        String          @id @default(uuid()) @db.Uuid
+  name      String          @unique @db.VarChar(80)
+  strategy  RoutingStrategy @default(FIXED)
+  modelIds  String[]        @map("model_ids") @db.Uuid
+  isDefault Boolean         @default(false) @map("is_default")
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("ai_routing_policies")
+}
+
+enum UsageStatus {
+  SUCCESS
+  ERROR
+}
+
+/// One provider call. Never stores prompt or completion content.
+model UsageRecord {
+  id           BigInt      @id @default(autoincrement())
+  providerId   String?     @map("provider_id") @db.Uuid
+  modelId      String?     @map("model_id") @db.Uuid
+  keyId        String?     @map("key_id") @db.Uuid
+  userId       String?     @map("user_id") @db.VarChar(64)
+  /// What triggered the call: playground, test, agent, ...
+  purpose      String      @db.VarChar(40)
+  /// Groups the attempts of one request (fallback chain).
+  requestId    String      @map("request_id") @db.VarChar(64)
+  attempt      Int         @default(1)
+  status       UsageStatus
+  errorKind    String?     @map("error_kind") @db.VarChar(40)
+  inputTokens  Int         @default(0) @map("input_tokens")
+  outputTokens Int         @default(0) @map("output_tokens")
+  /// Provider cost in micro-USD.
+  costMicros   BigInt      @default(0) @map("cost_micros")
+  /// End-user price in micro-units of the base currency.
+  priceMicros  BigInt      @default(0) @map("price_micros")
+  latencyMs    Int         @default(0) @map("latency_ms")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  provider Provider?    @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  model    AiModel?     @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  key      ProviderKey? @relation(fields: [keyId], references: [id], onDelete: SetNull)
+  user     User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([keyId, createdAt])
+  @@index([modelId, createdAt])
+  @@index([requestId])
+  @@map("ai_usage_records")
 }

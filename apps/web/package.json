@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@rentagent/ai-gateway": "workspace:*",
     "@rentagent/core": "workspace:*",
     "@rentagent/db": "workspace:*",
     "@rentagent/mail": "workspace:*",

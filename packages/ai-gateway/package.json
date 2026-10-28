@@ -1,0 +1,40 @@
+{
+  "name": "@rentagent/ai-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/amazon-bedrock": "5.0.126",
+    "@ai-sdk/anthropic": "4.0.90",
+    "@ai-sdk/azure": "4.0.112",
+    "@ai-sdk/cohere": "4.0.71",
+    "@ai-sdk/deepseek": "3.0.75",
+    "@ai-sdk/fireworks": "3.0.83",
+    "@ai-sdk/google": "4.0.107",
+    "@ai-sdk/groq": "4.0.72",
+    "@ai-sdk/mistral": "4.0.74",
+    "@ai-sdk/openai": "4.0.104",
+    "@ai-sdk/openai-compatible": "3.0.80",
+    "@ai-sdk/perplexity": "5.0.22",
+    "@ai-sdk/provider": "4.0.34",
+    "@ai-sdk/togetherai": "3.0.81",
+    "@ai-sdk/xai": "5.0.32",
+    "@rentagent/core": "workspace:*",
+    "@rentagent/db": "workspace:*",
+    "@rentagent/shared": "workspace:*",
+    "ai": "7.0.155",
+    "ioredis": "5.11.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "4.1.12"
+  }
+}

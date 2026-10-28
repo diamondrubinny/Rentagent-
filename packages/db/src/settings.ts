@@ -22,6 +22,8 @@ export interface SettingValues {
   };
   'privacy.optionalTrackersEnabled': boolean;
   'auth.registrationMode': 'open' | 'closed';
+  /** Global AI kill switch: when true, no provider calls are made. */
+  'ai.disabled': boolean;
   'setup.completedAt': string; // ISO timestamp
 }
 
