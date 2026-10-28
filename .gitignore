@@ -16,3 +16,4 @@ test-results/
 *.log
 .DS_Store
 deploy/docker/.ci-ca.crt
+*.rdb
