@@ -1,5 +1,6 @@
 import { getLogger, getServerEnv, parseKeyring, QUEUE_NAMES, type RunJob } from '@rentagent/core';
-import { getDb } from '@rentagent/db';
+import { getDb, getSetting } from '@rentagent/db';
+import { deliverWebhook, emitWebhookEvent } from '@rentagent/webhooks';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { executeRun, type RuntimeDeps } from '@rentagent/agent-runtime';
@@ -30,6 +31,36 @@ const runtimeDeps: RuntimeDeps = {
   redisUrl: env.REDIS_URL,
   appUrl: env.APP_URL,
 };
+
+/** Webhook notification for a finished live run (no chat content). */
+async function emitRunEvent(runId: string): Promise<void> {
+  const run = await db.run.findUnique({
+    where: { id: runId },
+    select: {
+      id: true,
+      mode: true,
+      status: true,
+      errorKind: true,
+      userId: true,
+      conversationId: true,
+      chargedMinor: true,
+      agent: { select: { slug: true } },
+    },
+  });
+  if (!run || run.mode !== 'LIVE') return;
+  const currency = (await getSetting(db, 'billing.baseCurrency')) ?? null;
+  const base = {
+    runId: run.id,
+    agentSlug: run.agent.slug,
+    userId: run.userId,
+    conversationId: run.conversationId,
+    chargedMinor: run.chargedMinor.toString(),
+    currency,
+  };
+  const deps = { db, redisUrl: env.REDIS_URL, log };
+  if (run.status === 'SUCCEEDED') await emitWebhookEvent(deps, 'run.succeeded', base);
+  else await emitWebhookEvent(deps, 'run.failed', { ...base, errorKind: run.errorKind });
+}
 
 async function beat(): Promise<void> {
   await connection.set(HEARTBEAT_KEY, new Date().toISOString(), 'EX', HEARTBEAT_TTL_SECONDS);
@@ -81,6 +112,7 @@ const workers: Worker[] = [
       // Paid runs: charge the actual price and release the rest of the hold.
       if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'CANCELED')
         await settleRun(db, job.data.runId);
+      if (status === 'SUCCEEDED' || status === 'FAILED') await emitRunEvent(job.data.runId);
     },
     {
       connection,
@@ -88,6 +120,18 @@ const workers: Worker[] = [
       // Agent runs can take minutes; keep the job lock alive meanwhile.
       lockDuration: 10 * 60 * 1000,
     },
+  ),
+  new Worker<{ deliveryId: string }>(
+    QUEUE_NAMES.webhooks,
+    async (job) => {
+      const finalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+      await deliverWebhook(
+        { db, keyring, userAgent: `RentAgent-Webhooks/${env.RENTAGENT_VERSION}` },
+        job.data.deliveryId,
+        { finalAttempt },
+      );
+    },
+    { connection, concurrency: 5 },
   ),
   createFileWorker(connection, runtimeDeps, {
     filesDir: env.FILES_DIR,

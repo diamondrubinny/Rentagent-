@@ -131,6 +131,7 @@ export function ConversationView({
   turns,
   followUp,
   labels,
+  feedbackEnabled,
 }: {
   conversation: { id: string; title: string };
   agentName: string;
@@ -138,6 +139,7 @@ export function ConversationView({
   turns: Turn[];
   followUp: 'allowed' | 'disabled' | 'agentUnavailable';
   labels: Labels;
+  feedbackEnabled: boolean;
 }) {
   const t = useTranslations('Chat');
   const tStatus = useTranslations('Chat.status');
@@ -190,6 +192,7 @@ export function ConversationView({
               agentName={agentName}
               title={conversation.title}
               labels={labels}
+              feedbackEnabled={feedbackEnabled}
             />
           );
         })}
@@ -315,12 +318,14 @@ function TurnView({
   agentName,
   title,
   labels,
+  feedbackEnabled,
 }: {
   turn: Turn;
   partial: string;
   agentName: string;
   title: string;
   labels: Labels;
+  feedbackEnabled: boolean;
 }) {
   const t = useTranslations('Chat');
   const tStatus = useTranslations('Chat.status');
@@ -410,7 +415,7 @@ function TurnView({
         {turn.status === 'SUCCEEDED' && turn.output !== null ? (
           <>
             <Markdown>{turn.output}</Markdown>
-            <AnswerActions turn={turn} title={title} />
+            <AnswerActions turn={turn} title={title} feedbackEnabled={feedbackEnabled} />
           </>
         ) : running ? (
           <>
@@ -439,7 +444,7 @@ function TurnView({
                 ? tRunErrors(turn.errorKind)
                 : tRunErrors('generic')}
             </p>
-            <AnswerActions turn={turn} title={title} />
+            <AnswerActions turn={turn} title={title} feedbackEnabled={feedbackEnabled} />
           </>
         )}
       </article>
@@ -470,7 +475,15 @@ function ApprovalInput({ input }: { input: unknown }) {
   );
 }
 
-function AnswerActions({ turn, title }: { turn: Turn; title: string }) {
+function AnswerActions({
+  turn,
+  title,
+  feedbackEnabled,
+}: {
+  turn: Turn;
+  title: string;
+  feedbackEnabled: boolean;
+}) {
   const t = useTranslations('Chat');
   const router = useRouter();
   const { pending, outcome, run } = useAction();
@@ -528,28 +541,30 @@ function AnswerActions({ turn, title }: { turn: Turn; title: string }) {
             </button>
           </>
         )}
-        <span className="ms-auto flex gap-2" role="group" aria-label={t('rateLabel')}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            aria-pressed={turn.rating === 1}
-            disabled={pending}
-            onClick={() => rate(turn.rating === 1 ? 0 : 1)}
-          >
-            <span aria-hidden="true">👍 </span>
-            {t('helpful')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            aria-pressed={turn.rating === -1}
-            disabled={pending}
-            onClick={() => rate(turn.rating === -1 ? 0 : -1)}
-          >
-            <span aria-hidden="true">👎 </span>
-            {t('notHelpful')}
-          </button>
-        </span>
+        {feedbackEnabled && (
+          <span className="ms-auto flex gap-2" role="group" aria-label={t('rateLabel')}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              aria-pressed={turn.rating === 1}
+              disabled={pending}
+              onClick={() => rate(turn.rating === 1 ? 0 : 1)}
+            >
+              <span aria-hidden="true">👍 </span>
+              {t('helpful')}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              aria-pressed={turn.rating === -1}
+              disabled={pending}
+              onClick={() => rate(turn.rating === -1 ? 0 : -1)}
+            >
+              <span aria-hidden="true">👎 </span>
+              {t('notHelpful')}
+            </button>
+          </span>
+        )}
       </div>
       <p role="status" className="text-sm">
         {copied ? t('copied') : ''}

@@ -12,6 +12,7 @@ import {
 import type { Prisma } from '@rentagent/db';
 import { type AgentConfig, formatMoney } from '@rentagent/shared';
 import { cache } from 'react';
+import { emitEvent } from './events';
 import { db, encryptionKeyring } from './runtime';
 
 export { InsufficientCreditsError };
@@ -112,4 +113,31 @@ export async function billingOverview() {
     outstanding: (wallets._sum.balanceMinor ?? 0n) + (wallets._sum.heldMinor ?? 0n),
     payments,
   };
+}
+
+/** Notifies webhooks about a payment (amounts as strings: JSON has no BigInt). */
+export async function emitPaymentEvent(
+  event: 'payment.succeeded' | 'payment.refunded',
+  payment: {
+    id: string;
+    userId: string | null;
+    gateway: string;
+    amountMinor: bigint;
+    currency: string;
+    refundedMinor: bigint;
+  },
+): Promise<void> {
+  const base = {
+    paymentId: payment.id,
+    userId: payment.userId,
+    gateway: payment.gateway.toLowerCase(),
+    amountMinor: payment.amountMinor.toString(),
+    currency: payment.currency,
+  };
+  if (event === 'payment.refunded')
+    await emitEvent('payment.refunded', {
+      ...base,
+      refundedMinor: payment.refundedMinor.toString(),
+    });
+  else await emitEvent('payment.succeeded', base);
 }

@@ -6,6 +6,7 @@ export const QUEUE_NAMES = {
   mail: 'mail',
   runs: 'agent-runs',
   files: 'files',
+  webhooks: 'webhooks',
 } as const;
 
 export interface RunJob {
@@ -44,6 +45,7 @@ export interface MailJob {
 
 const globalForQueues = globalThis as unknown as {
   rentagentSystemQueue?: Queue;
+  rentagentWebhookQueue?: Queue<{ deliveryId: string }>;
   rentagentMailQueue?: Queue<MailJob>;
   rentagentRunQueue?: Queue<RunJob>;
   rentagentFileQueue?: Queue<FileJob>;
@@ -132,4 +134,30 @@ export interface TranslationJobProgress {
   translated: number;
   rejected: number;
   updatedAt: string;
+}
+
+/** Outgoing webhook deliveries retry with backoff for about two hours. */
+export async function enqueueWebhookDelivery(
+  redisUrl: string,
+  deliveryId: string,
+  /** A new value for manual redeliveries: BullMQ ignores ids of jobs it still keeps. */
+  round?: number,
+): Promise<void> {
+  globalForQueues.rentagentWebhookQueue ??= new Queue<{ deliveryId: string }>(
+    QUEUE_NAMES.webhooks,
+    {
+      connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+      defaultJobOptions: {
+        attempts: 8,
+        backoff: { type: 'exponential', delay: 30_000 },
+        removeOnComplete: true,
+        removeOnFail: 1000,
+      },
+    },
+  );
+  await globalForQueues.rentagentWebhookQueue.add(
+    'deliver',
+    { deliveryId },
+    { jobId: round ? `${deliveryId}-r${round}` : deliveryId },
+  );
 }

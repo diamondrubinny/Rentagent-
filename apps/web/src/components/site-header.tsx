@@ -4,11 +4,13 @@ import { SignOutButton } from '@/components/sign-out-button';
 import { Link } from '@/i18n/navigation';
 import { getCurrentUser } from '@/lib/server/session';
 import { walletBalanceLabel } from '@/lib/server/billing';
+import { getBranding, imageVersion } from '@/lib/server/branding';
 import { getSiteConfig } from '@/lib/server/site';
 
 export async function SiteHeader({ siteName }: { siteName: string }) {
   const t = await getTranslations('Header');
   const site = await getSiteConfig();
+  const { branding } = site.setupComplete ? await getBranding() : { branding: null };
   const user = site.setupComplete ? await getCurrentUser() : null;
   const balance = user ? await walletBalanceLabel(user.id, await getLocale()) : null;
   return (
@@ -17,7 +19,15 @@ export async function SiteHeader({ siteName }: { siteName: string }) {
         aria-label={t('mainNav')}
         className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3"
       >
-        <Link href="/" className="me-auto text-lg font-bold no-underline">
+        <Link href="/" className="me-auto flex items-center gap-2 text-lg font-bold no-underline">
+          {branding?.logo && (
+            // eslint-disable-next-line @next/next/no-img-element -- small operator logo, decorative next to the name
+            <img
+              src={`/api/branding/logo?v=${imageVersion(branding.logo)}`}
+              alt=""
+              className="h-8 w-auto"
+            />
+          )}
           {siteName}
         </Link>
         {site.setupComplete && (

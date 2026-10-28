@@ -742,3 +742,45 @@ model Payment {
   @@index([userId, createdAt])
   @@map("payments")
 }
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+/// Outgoing webhook: the operator's endpoint receives signed event notifications.
+model Webhook {
+  id              String   @id @default(uuid()) @db.Uuid
+  url             String   @db.VarChar(2000)
+  description     String   @default("") @db.VarChar(200)
+  events          String[]
+  /// HMAC signing secret (AES-256-GCM encrypted).
+  secretEncrypted String   @map("secret_encrypted")
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  deliveries WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id             String                @id @default(uuid()) @db.Uuid
+  webhookId      String                @map("webhook_id") @db.Uuid
+  event          String                @db.VarChar(60)
+  payload        Json
+  status         WebhookDeliveryStatus @default(PENDING)
+  attempts       Int                   @default(0)
+  responseStatus Int?                  @map("response_status")
+  error          String?               @db.VarChar(200)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  deliveredAt    DateTime?             @map("delivered_at") @db.Timestamptz(3)
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
+}

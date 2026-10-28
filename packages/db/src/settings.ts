@@ -55,6 +55,20 @@ export interface SettingValues {
     clientSecretEncrypted: string;
     webhookId: string;
   };
+  branding: {
+    /** Hex colors (#rrggbb) checked for WCAG AA contrast; null = default theme. */
+    primaryLight: string | null;
+    primaryDark: string | null;
+    /** Stored image files (FILES_DIR/branding/<name>) and their verified types. */
+    logo: { file: string; mime: string } | null;
+    favicon: { file: string; mime: string } | null;
+    hidePoweredBy: boolean;
+  };
+  /** Optional modules the operator can switch off. */
+  features: {
+    feedback: boolean;
+    semanticSearch: boolean;
+  };
   'setup.completedAt': string; // ISO timestamp
 }
 

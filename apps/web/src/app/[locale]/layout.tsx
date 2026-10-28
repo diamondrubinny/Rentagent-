@@ -8,6 +8,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { routing } from '@/i18n/routing';
 import { ensureRoutingPublished, getEnabledLocales } from '@/lib/server/locales';
+import { brandingCss, getBranding, imageVersion } from '@/lib/server/branding';
 import { getSiteConfig } from '@/lib/server/site';
 import '../globals.css';
 
@@ -29,11 +30,15 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Metadata' });
   const site = await getSiteConfig();
+  const { branding } = await getBranding();
   return {
     title: { default: site.name, template: `%s | ${site.name}` },
     description: t('description'),
     applicationName: site.name,
     openGraph: { siteName: site.name, locale, type: 'website' },
+    ...(branding.favicon
+      ? { icons: { icon: `/api/branding/favicon?v=${imageVersion(branding.favicon)}` } }
+      : {}),
     alternates: {
       languages: Object.fromEntries(
         (await getEnabledLocales()).map(({ code }) => [code, `/${code}`]),
@@ -52,10 +57,16 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   const t = await getTranslations('Common');
   const site = await getSiteConfig();
+  const theme = brandingCss((await getBranding()).branding);
 
   return (
     <html lang={locale} dir={getTextDirection(locale)}>
       <body className="flex min-h-screen flex-col">
+        {theme && (
+          <style href="rentagent-brand" precedence="high">
+            {theme}
+          </style>
+        )}
         <NextIntlClientProvider>
           <a
             href="#main"

@@ -18,6 +18,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { audit } from '@/lib/server/audit';
 import { InsufficientCreditsError, reserveCredits } from '@/lib/server/billing';
+import { getBranding } from '@/lib/server/branding';
 import { runnableAgent } from '@/lib/server/catalog';
 import { ACTIVE_RUN_STATUSES, cancelRunAs, decideApprovalAs } from '@/lib/server/runs';
 import { db, redis } from '@/lib/server/runtime';
@@ -243,6 +244,7 @@ const feedbackSchema = z.object({
 export async function rateRun(runId: string, input: unknown): Promise<ChatResult> {
   const user = await activeUser();
   if (!user) return signedOut;
+  if (!(await getBranding()).features.feedback) return { ok: false, error: 'feedbackDisabled' };
   const run = await ownRun(user.id, runId);
   if (!run) return notFound;
   if (run.status !== 'SUCCEEDED' && run.status !== 'FAILED')

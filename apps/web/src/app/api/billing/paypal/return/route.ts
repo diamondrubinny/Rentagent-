@@ -2,7 +2,7 @@ import { capturePayPalOrder, completePayment, PayPalError } from '@rentagent/bil
 import { getServerEnv } from '@rentagent/core';
 import { isSupportedLocale } from '@rentagent/shared';
 import { audit } from '@/lib/server/audit';
-import { getBillingConfig } from '@/lib/server/billing';
+import { emitPaymentEvent, getBillingConfig } from '@/lib/server/billing';
 import { db, logger } from '@/lib/server/runtime';
 
 export const dynamic = 'force-dynamic';
@@ -38,12 +38,14 @@ export async function GET(request: Request) {
       currency: capture.currency,
       chargeRef: capture.captureId,
     });
-    if (result === 'credited')
+    if (result === 'credited') {
       await audit('billing.payment_succeeded', {
         actorId: payment.userId ?? undefined,
         target: `payment:${payment.id}`,
         meta: { gateway: 'paypal' },
       });
+      await emitPaymentEvent('payment.succeeded', payment);
+    }
     if (result === 'mismatch') {
       logger().error({ orderId }, 'paypal capture does not match the top-up');
       return back('failed=1');

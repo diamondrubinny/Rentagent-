@@ -6,3 +6,4 @@ export * from './auth';
 export * from './ai';
 export * from './agent';
 export * from './icu';
+export * from './color';

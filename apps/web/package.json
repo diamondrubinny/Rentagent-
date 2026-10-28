@@ -19,6 +19,7 @@
     "@rentagent/db": "workspace:*",
     "@rentagent/mail": "workspace:*",
     "@rentagent/shared": "workspace:*",
+    "@rentagent/webhooks": "workspace:*",
     "better-auth": "1.7.14",
     "ioredis": "5.11.1",
     "next": "16.4.3",

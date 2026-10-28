@@ -15,6 +15,7 @@ import { createAuthMiddleware, isAPIError } from 'better-auth/api';
 import { nextCookies } from 'better-auth/next-js';
 import { twoFactor } from 'better-auth/plugins/two-factor';
 import { audit } from './audit';
+import { emitEvent } from './events';
 import { db, encryptionKeyring, logger, redis } from './runtime';
 
 interface AuthRuntimeConfig {
@@ -189,6 +190,14 @@ function createAuth(config: AuthRuntimeConfig) {
           before: async (user) => ({
             data: { ...user, locale: userLocale(user, config.defaultLocale) },
           }),
+          after: async (user) => {
+            await emitEvent('user.registered', {
+              userId: user.id,
+              email: user.email,
+              name: user.name,
+              locale: userLocale(user, '') || null,
+            });
+          },
         },
         update: {
           // Profile updates go through the same check (the field is user-writable).

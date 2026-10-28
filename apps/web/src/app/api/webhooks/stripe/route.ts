@@ -6,7 +6,7 @@ import {
 } from '@rentagent/billing';
 import { jsonResponse } from '@/lib/server/api-auth';
 import { audit } from '@/lib/server/audit';
-import { getBillingConfig } from '@/lib/server/billing';
+import { emitPaymentEvent, getBillingConfig } from '@/lib/server/billing';
 import { db, logger } from '@/lib/server/runtime';
 
 export const dynamic = 'force-dynamic';
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
           target: `payment:${payment?.id}`,
           meta: { gateway: 'stripe' },
         });
+        if (payment) await emitPaymentEvent('payment.succeeded', payment);
       } else if (result === 'mismatch') {
         logger().error({ session: session.id }, 'stripe payment amount does not match the top-up');
       }
@@ -81,6 +82,12 @@ export async function POST(request: Request) {
           : charge.payment_intent?.id;
       if (intent) {
         const deducted = await applyRefund(db(), 'STRIPE', intent, BigInt(charge.amount_refunded));
+        if (deducted > 0n) {
+          const payment = await db().payment.findFirst({
+            where: { gateway: 'STRIPE', chargeRef: intent },
+          });
+          if (payment) await emitPaymentEvent('payment.refunded', payment);
+        }
         if (deducted > 0n)
           await audit('billing.refund', {
             meta: { gateway: 'stripe', amountMinor: deducted.toString() },

@@ -7,7 +7,7 @@ import {
 } from '@rentagent/billing';
 import { jsonResponse } from '@/lib/server/api-auth';
 import { audit } from '@/lib/server/audit';
-import { getBillingConfig } from '@/lib/server/billing';
+import { emitPaymentEvent, getBillingConfig } from '@/lib/server/billing';
 import { db, logger } from '@/lib/server/runtime';
 
 export const dynamic = 'force-dynamic';
@@ -52,8 +52,13 @@ export async function POST(request: Request) {
         currency: resource.amount.currency_code,
         chargeRef: resource.id ?? null,
       });
-      if (result === 'credited')
+      if (result === 'credited') {
         await audit('billing.payment_succeeded', { meta: { gateway: 'paypal' } });
+        const payment = await db().payment.findUnique({
+          where: { gateway_gatewayRef: { gateway: 'PAYPAL', gatewayRef: orderId } },
+        });
+        if (payment) await emitPaymentEvent('payment.succeeded', payment);
+      }
     }
   } else if (event.event_type === 'PAYMENT.CAPTURE.REFUNDED') {
     // The resource is the refund itself; its "up" link names the capture.
@@ -66,10 +71,15 @@ export async function POST(request: Request) {
         resource.id,
         toPayPalMinor(resource.amount),
       );
-      if (deducted > 0n)
+      if (deducted > 0n) {
         await audit('billing.refund', {
           meta: { gateway: 'paypal', amountMinor: deducted.toString() },
         });
+        const payment = await db().payment.findFirst({
+          where: { gateway: 'PAYPAL', chargeRef: captureId },
+        });
+        if (payment) await emitPaymentEvent('payment.refunded', payment);
+      }
     }
   }
   return jsonResponse(200, { received: true });

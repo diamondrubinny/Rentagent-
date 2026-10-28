@@ -20,5 +20,6 @@ export {
   LedgerType,
   PaymentGateway,
   PaymentStatus,
+  WebhookDeliveryStatus,
 } from './generated/prisma/client';
 export type { PrismaClient } from './generated/prisma/client';

@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { Link } from '@/i18n/navigation';
+import { getBranding } from '@/lib/server/branding';
 import { runnableAgent } from '@/lib/server/catalog';
 import { db } from '@/lib/server/runtime';
 import { requireUser } from '@/lib/server/session';
@@ -119,6 +120,7 @@ export default async function ConversationPage({ params }: PageProps) {
               : 'disabled'
         }
         labels={await toolLabels()}
+        feedbackEnabled={(await getBranding()).features.feedback}
       />
     </div>
   );

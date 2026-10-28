@@ -13,6 +13,7 @@ import {
   searchTerms,
 } from '@rentagent/shared';
 import { gatewayDeps } from './ai';
+import { getBranding } from './branding';
 import { clientIpHash, db, logger, redis } from './runtime';
 
 export interface CatalogAgent {
@@ -122,6 +123,7 @@ export async function relatedAgents(
   excludeIds: string[],
 ): Promise<CatalogAgent[]> {
   if (searchTerms(query).length === 0) return [];
+  if (!(await getBranding()).features.semanticSearch) return [];
   try {
     const modelId = await getSetting(db(), 'ai.embeddingModelId');
     if (!modelId) return [];
