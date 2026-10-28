@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { emailField, nameField, passwordField } from './auth';
 import { BUILTIN_LOCALES, isValidTimeZone } from './i18n';
 import { isSupportedCurrency } from './money';
 import { normalizeSingleLine } from './text';
@@ -30,6 +31,10 @@ export const SMTP_SECURITY = ['tls', 'starttls', 'none'] as const;
 export const setupSchema = z
   .object({
     token: z.string().min(1, { error: 'required' }).max(512, { error: 'tooLong' }),
+    ownerName: nameField,
+    ownerEmail: emailField,
+    ownerPassword: passwordField,
+    ownerPasswordConfirm: z.string(),
     siteName: singleLine(80),
     defaultLocale: z.enum(BUILTIN_LOCALES, { error: 'invalidOption' }),
     baseCurrency: z
@@ -61,6 +66,9 @@ export const setupSchema = z
     smtpFromName: optionalSingleLine(120),
   })
   .superRefine((data, ctx) => {
+    if (data.ownerPassword !== data.ownerPasswordConfirm) {
+      ctx.addIssue({ code: 'custom', path: ['ownerPasswordConfirm'], message: 'passwordMismatch' });
+    }
     if (!data.smtpEnabled) return;
     if (!data.smtpHost) ctx.addIssue({ code: 'custom', path: ['smtpHost'], message: 'required' });
     if (!z.email().safeParse(data.smtpFromEmail).success) {

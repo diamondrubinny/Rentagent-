@@ -55,6 +55,10 @@ function Field({ name, label, hint, error, children }: FieldProps) {
 
 const FIELD_ORDER = [
   'token',
+  'ownerName',
+  'ownerEmail',
+  'ownerPassword',
+  'ownerPasswordConfirm',
   'siteName',
   'defaultLocale',
   'timeZone',
@@ -132,6 +136,71 @@ export function SetupForm({ defaults, locales, timeZones, currencies }: SetupFor
               spellCheck={false}
               dir="ltr"
               className="field-input font-mono"
+            />
+          )}
+        </Field>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="mb-2 text-xl font-bold">{t('sectionOwner')}</legend>
+        <p className="text-muted">{t('ownerIntro')}</p>
+        <Field name="ownerName" label={t('ownerName')} error={fieldError('ownerName')}>
+          {(props) => (
+            <input
+              {...props}
+              type="text"
+              required
+              autoComplete="name"
+              dir="auto"
+              defaultValue={value('ownerName')}
+              className="field-input"
+            />
+          )}
+        </Field>
+        <Field name="ownerEmail" label={t('ownerEmail')} error={fieldError('ownerEmail')}>
+          {(props) => (
+            <input
+              {...props}
+              type="email"
+              required
+              autoComplete="email"
+              dir="ltr"
+              defaultValue={value('ownerEmail')}
+              className="field-input"
+            />
+          )}
+        </Field>
+        <Field
+          name="ownerPassword"
+          label={t('ownerPassword')}
+          hint={t('ownerPasswordHint')}
+          error={fieldError('ownerPassword')}
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="password"
+              required
+              minLength={10}
+              autoComplete="new-password"
+              dir="ltr"
+              className="field-input"
+            />
+          )}
+        </Field>
+        <Field
+          name="ownerPasswordConfirm"
+          label={t('ownerPasswordConfirm')}
+          error={fieldError('ownerPasswordConfirm')}
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="password"
+              required
+              autoComplete="new-password"
+              dir="ltr"
+              className="field-input"
             />
           )}
         </Field>

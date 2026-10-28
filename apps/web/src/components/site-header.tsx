@@ -1,17 +1,61 @@
+import { can } from '@rentagent/shared';
 import { getTranslations } from 'next-intl/server';
+import { SignOutButton } from '@/components/sign-out-button';
 import { Link } from '@/i18n/navigation';
+import { getCurrentUser } from '@/lib/server/session';
+import { getSiteConfig } from '@/lib/server/site';
 
 export async function SiteHeader({ siteName }: { siteName: string }) {
   const t = await getTranslations('Header');
+  const site = await getSiteConfig();
+  const user = site.setupComplete ? await getCurrentUser() : null;
   return (
     <header className="border-b border-border bg-surface">
       <nav
         aria-label={t('mainNav')}
-        className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3"
+        className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3"
       >
-        <Link href="/" className="text-lg font-bold no-underline">
+        <Link href="/" className="me-auto text-lg font-bold no-underline">
           {siteName}
         </Link>
+        {site.setupComplete && (
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {user ? (
+              <>
+                {can(user.role, 'admin.access') && (
+                  <li>
+                    <Link className="link" href="/admin">
+                      {t('admin')}
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <Link className="link" href="/account">
+                    {t('account')}
+                  </Link>
+                </li>
+                <li>
+                  <SignOutButton />
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link className="link" href="/sign-in">
+                    {t('signIn')}
+                  </Link>
+                </li>
+                {site.registrationOpen && (
+                  <li>
+                    <Link className="btn btn-primary" href="/sign-up">
+                      {t('signUp')}
+                    </Link>
+                  </li>
+                )}
+              </>
+            )}
+          </ul>
+        )}
       </nav>
     </header>
   );

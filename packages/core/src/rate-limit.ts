@@ -33,3 +33,17 @@ export async function rateLimit(
     return { allowed: failOpen, remaining: 0, retryAfterSeconds: windowSeconds };
   }
 }
+
+/**
+ * Atomic fixed-window consume, shaped for Better Auth's `rateLimit.customStorage`.
+ * Fails open when Redis is unavailable so an outage does not lock everyone out;
+ * sensitive app endpoints use `rateLimit` (fail closed) instead.
+ */
+export async function consumeRateLimit(
+  redis: Pick<Redis, 'multi'>,
+  key: string,
+  rule: { window: number; max: number },
+): Promise<{ allowed: boolean; retryAfter: number | null }> {
+  const result = await rateLimit(redis, `auth:${key}`, rule.max, rule.window, { failOpen: true });
+  return { allowed: result.allowed, retryAfter: result.allowed ? null : result.retryAfterSeconds };
+}

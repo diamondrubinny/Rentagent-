@@ -3,6 +3,10 @@ import { setupSchema } from '../src/setup-schema';
 
 const base = {
   token: 'x'.repeat(40),
+  ownerName: 'Dana Levi',
+  ownerEmail: 'Owner@Example.com',
+  ownerPassword: 'a long enough passphrase',
+  ownerPasswordConfirm: 'a long enough passphrase',
   siteName: '  My Agents\u0007 ',
   defaultLocale: 'he',
   baseCurrency: 'usd',
@@ -15,6 +19,22 @@ describe('setupSchema', () => {
     expect(result.siteName).toBe('My Agents');
     expect(result.baseCurrency).toBe('USD');
     expect(result.smtpEnabled).toBe(false);
+    expect(result.ownerEmail).toBe('owner@example.com');
+  });
+
+  it('requires matching owner passwords of sufficient length', () => {
+    const result = setupSchema.safeParse({
+      ...base,
+      ownerPassword: 'short',
+      ownerPasswordConfirm: 'other',
+    });
+    const messages = result.error?.issues.map((i) => `${i.path.join('.')}:${i.message}`);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        'ownerPassword:passwordTooShort',
+        'ownerPasswordConfirm:passwordMismatch',
+      ]),
+    );
   });
 
   it('rejects unknown currency and timezone with i18n keys', () => {

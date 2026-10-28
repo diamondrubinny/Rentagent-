@@ -1,6 +1,8 @@
 import { hasLocale } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
 import { routing } from './routing';
+import { getSetting } from '@rentagent/db';
+import { db } from '@/lib/server/runtime';
 
 type Messages = Record<string, unknown>;
 
@@ -30,5 +32,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
           (await import(`../../messages/${locale}.json`)).default as Messages,
         );
 
-  return { locale, messages };
+  // Dates and times are shown in the installation's time zone (UTC until setup sets one).
+  const timeZone = (await getSetting(db(), 'site.timeZone').catch(() => undefined)) ?? 'UTC';
+
+  return { locale, messages, timeZone };
 });

@@ -1,7 +1,6 @@
-import 'server-only';
 import nodemailer from 'nodemailer';
 
-export interface SmtpConfig {
+export interface SmtpConnection {
   host: string;
   port: number;
   security: 'tls' | 'starttls' | 'none';
@@ -9,7 +8,7 @@ export interface SmtpConfig {
   password: string;
 }
 
-export function createSmtpTransport(config: SmtpConfig) {
+export function createSmtpTransport(config: SmtpConnection) {
   return nodemailer.createTransport({
     host: config.host,
     port: config.port,
@@ -24,7 +23,7 @@ export function createSmtpTransport(config: SmtpConfig) {
 }
 
 /** Verifies that the SMTP server accepts a connection (and credentials, if any). */
-export async function verifySmtp(config: SmtpConfig): Promise<boolean> {
+export async function verifySmtp(config: SmtpConnection): Promise<boolean> {
   try {
     await createSmtpTransport(config).verify();
     return true;

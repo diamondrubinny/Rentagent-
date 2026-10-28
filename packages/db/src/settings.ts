@@ -21,6 +21,7 @@ export interface SettingValues {
     fromName: string;
   };
   'privacy.optionalTrackersEnabled': boolean;
+  'auth.registrationMode': 'open' | 'closed';
   'setup.completedAt': string; // ISO timestamp
 }
 

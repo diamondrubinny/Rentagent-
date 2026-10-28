@@ -13,8 +13,11 @@
   "dependencies": {
     "@rentagent/core": "workspace:*",
     "@rentagent/db": "workspace:*",
+    "@rentagent/mail": "workspace:*",
+    "@rentagent/shared": "workspace:*",
     "bullmq": "5.81.5",
-    "ioredis": "5.11.1"
+    "ioredis": "5.11.1",
+    "pino": "10.4.0"
   },
   "devDependencies": {
     "tsup": "8.5.1",

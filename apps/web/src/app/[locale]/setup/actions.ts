@@ -1,22 +1,24 @@
 'use server';
 
-import { encryptSecret, getServerEnv, rateLimit, safeEqual } from '@rentagent/core';
-import { settingUpsert, TextDirection } from '@rentagent/db';
+import { encryptSecret, getServerEnv, randomToken, rateLimit, safeEqual } from '@rentagent/core';
+import { settingUpsert, TextDirection, UserRole, UserStatus } from '@rentagent/db';
 import {
   BUILTIN_LOCALES,
   getLocaleNativeName,
   getTextDirection,
   setupSchema,
 } from '@rentagent/shared';
+import { hashPassword } from 'better-auth/crypto';
 import { audit } from '@/lib/server/audit';
-import { verifySmtp } from '@/lib/server/mail';
+import { resetAuth } from '@/lib/server/auth';
+import { verifySmtp } from '@rentagent/mail';
 import { clientIpHash, db, encryptionKeyring, logger, redis } from '@/lib/server/runtime';
 import { getSiteConfig } from '@/lib/server/site';
 import { revalidatePath } from 'next/cache';
 import { redirect } from '@/i18n/navigation';
 import type { SetupFormState } from './state';
 
-const SECRET_FIELDS = new Set(['token', 'smtpPassword']);
+const SECRET_FIELDS = new Set(['token', 'smtpPassword', 'ownerPassword', 'ownerPasswordConfirm']);
 const SETUP_LOCK_ID = 7_420_001; // arbitrary constant for pg_advisory_xact_lock
 
 class SetupAlreadyCompleteError extends Error {}
@@ -77,18 +79,44 @@ export async function completeSetup(
   }
 
   const keyring = encryptionKeyring();
+  // Same scrypt hash Better Auth uses for sign-in verification.
+  const passwordHash = await hashPassword(data.ownerPassword);
+  const ownerId = randomToken(24);
   try {
     await db().$transaction(async (tx) => {
       // Serializes concurrent submissions so setup can only complete once.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${SETUP_LOCK_ID})`;
       const existing = await tx.setting.findUnique({ where: { key: 'setup.completedAt' } });
-      if (existing) throw new SetupAlreadyCompleteError();
+      if (existing || (await tx.user.count()) > 0) throw new SetupAlreadyCompleteError();
+
+      // The owner is created directly (not via sign-up): verified, privileged, in the same transaction.
+      await tx.user.create({
+        data: {
+          id: ownerId,
+          name: data.ownerName,
+          email: data.ownerEmail,
+          emailVerified: true,
+          role: UserRole.OWNER,
+          status: UserStatus.ACTIVE,
+          locale: data.defaultLocale,
+        },
+      });
+      await tx.account.create({
+        data: {
+          id: randomToken(24),
+          accountId: ownerId,
+          providerId: 'credential',
+          userId: ownerId,
+          password: passwordHash,
+        },
+      });
 
       await tx.setting.upsert(settingUpsert('site.name', data.siteName, 'setup'));
       await tx.setting.upsert(settingUpsert('site.defaultLocale', data.defaultLocale, 'setup'));
       await tx.setting.upsert(settingUpsert('site.timeZone', data.timeZone, 'setup'));
       await tx.setting.upsert(settingUpsert('billing.baseCurrency', data.baseCurrency, 'setup'));
       await tx.setting.upsert(settingUpsert('privacy.optionalTrackersEnabled', false, 'setup'));
+      await tx.setting.upsert(settingUpsert('auth.registrationMode', 'closed', 'setup'));
       if (data.licenseKey) {
         await tx.setting.upsert(
           settingUpsert(
@@ -138,7 +166,9 @@ export async function completeSetup(
     return fail('generic');
   }
 
+  resetAuth();
   await audit('setup.completed', {
+    actorId: ownerId,
     meta: {
       defaultLocale: data.defaultLocale,
       currency: data.baseCurrency,
@@ -147,6 +177,9 @@ export async function completeSetup(
   });
   // The site name and setup state are rendered in the shared layout.
   revalidatePath('/', 'layout');
-  redirect({ href: { pathname: '/', query: { setup: 'done' } }, locale: data.defaultLocale });
+  redirect({
+    href: { pathname: '/sign-in', query: { setup: 'done' } },
+    locale: data.defaultLocale,
+  });
   return { status: 'idle' };
 }

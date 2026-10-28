@@ -9,7 +9,12 @@
   },
   "Header": {
     "mainNav": "Main",
-    "home": "Home"
+    "home": "Home",
+    "admin": "Admin",
+    "account": "My account",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out"
   },
   "Footer": {
     "legalNav": "Legal and accessibility",
@@ -71,7 +76,14 @@
       "alreadyComplete": "Setup has already been completed.",
       "smtpFailed": "Could not connect to the SMTP server. Check the details, or uncheck SMTP to configure it later.",
       "generic": "Something went wrong. Please try again."
-    }
+    },
+    "sectionOwner": "Owner account",
+    "ownerIntro": "This account has full control of the installation. You will be asked to turn on two-factor authentication after signing in.",
+    "ownerName": "Full name *",
+    "ownerEmail": "Email *",
+    "ownerPassword": "Password *",
+    "ownerPasswordHint": "At least 10 characters. A long passphrase is best.",
+    "ownerPasswordConfirm": "Confirm password *"
   },
   "Validation": {
     "required": "This field is required.",
@@ -81,7 +93,10 @@
     "invalidTimeZone": "Enter a valid IANA time zone, for example Europe/London.",
     "invalidPort": "Enter a port number between 1 and 65535.",
     "invalidEmail": "Enter a valid email address.",
-    "invalidToken": "The setup token is incorrect."
+    "invalidToken": "The setup token is incorrect.",
+    "passwordTooShort": "Use at least 10 characters.",
+    "passwordTooLong": "Use at most 128 characters.",
+    "passwordMismatch": "The passwords do not match."
   },
   "Errors": {
     "notFoundTitle": "Page not found",
@@ -118,5 +133,251 @@
     "save": "Save my choices",
     "saved": "Your choices have been saved.",
     "bannerText": "We use essential cookies to run this site and, with your permission, optional cookies for analytics and marketing."
+  },
+  "Roles": {
+    "OWNER": "Owner",
+    "ADMIN": "Administrator",
+    "AGENT_MANAGER": "Agent manager",
+    "SUPPORT": "Support",
+    "USER": "User"
+  },
+  "Auth": {
+    "signIn": {
+      "title": "Sign in",
+      "intro": "Welcome back to {siteName}.",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Keep me signed in on this device",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgot": "Forgot your password?",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Sign up",
+      "verifiedNotice": "Your email address is confirmed. You can sign in now.",
+      "resetNotice": "Your password was changed. Sign in with your new password.",
+      "setupNotice": "Setup is complete. Sign in with the owner account you just created."
+    },
+    "signUp": {
+      "title": "Create an account",
+      "intro": "Join {siteName} to rent AI agents.",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least {min} characters. A long passphrase is best.",
+      "passwordConfirm": "Confirm password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "success": "Almost done! Check your inbox for a link to activate your account. If it doesn't arrive within a few minutes, check your spam folder.",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "closed": "Registration is currently closed. Contact the site operator for access."
+    },
+    "forgot": {
+      "title": "Forgot your password?",
+      "intro": "Enter your email and we'll send you a link to choose a new password.",
+      "noEmail": "Password reset by email is not available on this site. Contact the site administrator.",
+      "email": "Email",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "success": "If an account exists for this address, a reset link is on its way. It expires in 1 hour.",
+      "back": "Back to sign in"
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "intro": "Signing in with the new password will sign you out of all other devices.",
+      "password": "New password",
+      "passwordHint": "At least {min} characters. A long passphrase is best.",
+      "passwordConfirm": "Confirm new password",
+      "submit": "Save new password",
+      "submitting": "Saving…",
+      "invalidLink": "This reset link is invalid or has expired.",
+      "requestNew": "Request a new link"
+    },
+    "twoFactor": {
+      "title": "Two-factor authentication",
+      "intro": "Enter the code from your authenticator app to finish signing in.",
+      "code": "6-digit code",
+      "codeHint": "Open your authenticator app (for example Google Authenticator, Microsoft Authenticator or 1Password).",
+      "backupCode": "Backup code",
+      "backupHint": "Each backup code can be used only once.",
+      "trustDevice": "Trust this device for 30 days",
+      "submit": "Verify",
+      "submitting": "Verifying…",
+      "useBackup": "Use a backup code instead",
+      "useApp": "Use the authenticator app instead",
+      "backToSignIn": "Sign in again"
+    }
+  },
+  "AuthErrors": {
+    "invalidCredentials": "The email or password is incorrect.",
+    "invalidPassword": "The password is incorrect.",
+    "emailNotVerified": "Please confirm your email address first. We've sent you a new confirmation link.",
+    "passwordTooShort": "The password is too short.",
+    "passwordTooLong": "The password is too long.",
+    "invalidToken": "This link is invalid or has expired. Please request a new one.",
+    "invalidCode": "The code is incorrect. Check your app and try again.",
+    "locked": "Too many incorrect codes. Try again in 15 minutes.",
+    "twoFactorExpired": "Your sign-in attempt expired.",
+    "signInUnavailable": "This account cannot sign in. Contact the site administrator.",
+    "sessionExpired": "For your security, please sign in again.",
+    "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "Account": {
+    "nav": "Account",
+    "profile": {
+      "title": "Profile",
+      "name": "Full name",
+      "email": "Email",
+      "emailHint": "Contact the site administrator to change your email address.",
+      "locale": "Preferred language",
+      "localeHint": "Used for emails we send you.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Your profile was updated."
+    },
+    "security": {
+      "title": "Security",
+      "mfaRequired": "Your role requires two-factor authentication. Turn it on below to access the admin area.",
+      "twoFactor": {
+        "title": "Two-factor authentication",
+        "statusOn": "Two-factor authentication is on.",
+        "statusOff": "Two-factor authentication is off.",
+        "intro": "Protect your account with a code from an authenticator app in addition to your password.",
+        "enable": "Turn on two-factor authentication",
+        "disable": "Turn off",
+        "regenerate": "Generate new backup codes",
+        "confirmPassword": "Confirm with your password",
+        "continue": "Continue",
+        "cancel": "Cancel",
+        "working": "Please wait…",
+        "scanStep": "Scan the QR code with your authenticator app, or enter the key manually.",
+        "codeStep": "Enter the 6-digit code from the app to finish.",
+        "qrAlt": "QR code for setting up two-factor authentication in an authenticator app",
+        "manualKey": "Manual key:",
+        "verifyCode": "6-digit code from the app",
+        "activate": "Activate",
+        "backupTitle": "Backup codes",
+        "backupIntro": "Save these codes somewhere safe. Each can be used once if you lose access to your app.",
+        "copy": "Copy codes",
+        "download": "Download as text file",
+        "copied": "Codes copied to the clipboard."
+      },
+      "password": {
+        "title": "Password",
+        "current": "Current password",
+        "new": "New password",
+        "hint": "At least {min} characters. Changing it signs you out of all other devices.",
+        "confirm": "Confirm new password",
+        "submit": "Change password",
+        "saving": "Saving…",
+        "changed": "Your password was changed and other devices were signed out."
+      },
+      "sessions": {
+        "title": "Active sessions",
+        "loading": "Loading sessions…",
+        "current": "This device",
+        "details": "IP {ip} · signed in {created}",
+        "revoke": "Sign out",
+        "revokeLabel": "Sign out {device}",
+        "revokeOthers": "Sign out of all other devices",
+        "revoked": "The session was signed out.",
+        "revokedOthers": "All other devices were signed out."
+      }
+    }
+  },
+  "Admin": {
+    "nav": "Admin",
+    "area": "Administration",
+    "overview": {
+      "title": "Overview",
+      "users": "Users",
+      "disabled": "Disabled accounts",
+      "staffWithout2fa": "Staff without 2FA",
+      "email": "Outgoing email",
+      "registration": "Self-service registration",
+      "version": "Version",
+      "on": "Configured",
+      "off": "Not configured",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "users": {
+      "title": "Users",
+      "search": "Search by name or email",
+      "searchButton": "Search",
+      "count": "{count, plural, =0 {No users found} one {# user} other {# users}}",
+      "name": "Name",
+      "role": "Role",
+      "status": "Status",
+      "security": "2FA",
+      "created": "Joined",
+      "actions": "Actions",
+      "active": "Active",
+      "disabledStatus": "Disabled",
+      "unverified": "Email not confirmed",
+      "twoFactorOn": "On",
+      "twoFactorOff": "Off",
+      "you": "You",
+      "pagination": "Pages",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {pages}",
+      "roleFor": "Role for {name}",
+      "saveRole": "Save role",
+      "roleSaved": "Role updated.",
+      "disable": "Disable",
+      "confirmDisable": "Confirm: disable {name}",
+      "cancel": "Cancel",
+      "enable": "Enable",
+      "userDisabled": "User disabled and signed out.",
+      "userEnabled": "User enabled.",
+      "signOutEverywhere": "Sign out everywhere",
+      "sessionsRevoked": "All sessions of this user were signed out."
+    },
+    "audit": {
+      "title": "Audit log",
+      "intro": "Security-relevant events. Entries cannot be edited or deleted from the interface.",
+      "filter": "Filter events",
+      "all": "All",
+      "groups": {
+        "auth": "Sign-in and account",
+        "admin": "User management",
+        "setup": "Setup",
+        "settings": "Settings"
+      },
+      "time": "Time",
+      "action": "Event",
+      "actor": "By",
+      "target": "Target",
+      "details": "Details",
+      "system": "System / anonymous",
+      "empty": "No events yet.",
+      "pagination": "Pages",
+      "previous": "Newer",
+      "next": "Older",
+      "pageOf": "Page {page} of {pages}"
+    },
+    "settings": {
+      "title": "Settings",
+      "siteName": "Site name",
+      "registration": "Who can create an account?",
+      "smtpRequired": "Open registration requires outgoing email (SMTP), because every new account must confirm its email address.",
+      "open": "Anyone",
+      "openHint": "Visitors can sign up and must confirm their email address.",
+      "closed": "Nobody (closed)",
+      "closedHint": "Only existing accounts can sign in.",
+      "save": "Save settings",
+      "saving": "Saving…",
+      "saved": "Settings saved."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "invalid": "Some values are invalid.",
+      "notFound": "The user no longer exists.",
+      "lastOwner": "The installation must keep at least one active owner.",
+      "smtpRequired": "Configure outgoing email before opening registration.",
+      "generic": "Something went wrong. Please try again."
+    }
   }
 }

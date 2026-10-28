@@ -8,7 +8,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(import.meta.dirname, '../../'),
-  transpilePackages: ['@rentagent/shared', '@rentagent/core', '@rentagent/db'],
+  transpilePackages: ['@rentagent/shared', '@rentagent/core', '@rentagent/db', '@rentagent/mail'],
   serverExternalPackages: ['pino', 'pg', 'nodemailer'],
   poweredByHeader: false,
   reactStrictMode: true,

@@ -7,6 +7,9 @@ export interface SiteConfig {
   name: string;
   setupComplete: boolean;
   optionalTrackersEnabled: boolean;
+  /** Self-service sign-up is possible (operator opened it and SMTP works for verification). */
+  registrationOpen: boolean;
+  smtpEnabled: boolean;
 }
 
 const DEFAULT_SITE_NAME = 'RentAgent';
@@ -18,11 +21,16 @@ export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
       'site.name',
       'setup.completedAt',
       'privacy.optionalTrackersEnabled',
+      'auth.registrationMode',
+      'mail.smtp',
     ] as const);
+    const smtpEnabled = Boolean(settings['mail.smtp']?.enabled);
     return {
       name: settings['site.name'] ?? DEFAULT_SITE_NAME,
       setupComplete: Boolean(settings['setup.completedAt']),
       optionalTrackersEnabled: settings['privacy.optionalTrackersEnabled'] ?? false,
+      registrationOpen: smtpEnabled && settings['auth.registrationMode'] === 'open',
+      smtpEnabled,
     };
   } catch (error) {
     logger().error({ err: error }, 'failed to load site settings');

@@ -1,8 +1,9 @@
-import { getLogger, getServerEnv } from '@rentagent/core';
+import { getLogger, getServerEnv, parseKeyring, QUEUE_NAMES } from '@rentagent/core';
+import { getDb } from '@rentagent/db';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
+import { createMailWorker } from './mail';
 
-const QUEUE_SYSTEM = 'system';
 const HEARTBEAT_KEY = 'worker:heartbeat';
 const HEARTBEAT_EVERY_MS = 15_000;
 const HEARTBEAT_TTL_SECONDS = 45;
@@ -12,30 +13,40 @@ const env = getServerEnv();
 
 // BullMQ requires maxRetriesPerRequest: null for blocking connections.
 const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
+const db = getDb(env.DATABASE_URL);
+const keyring = parseKeyring(env.APP_ENCRYPTION_KEY, env.APP_ENCRYPTION_KEYS_PREVIOUS);
 
 async function beat(): Promise<void> {
   await connection.set(HEARTBEAT_KEY, new Date().toISOString(), 'EX', HEARTBEAT_TTL_SECONDS);
 }
 
-const systemQueue = new Queue(QUEUE_SYSTEM, { connection });
+const systemQueue = new Queue(QUEUE_NAMES.system, { connection });
 
-const systemWorker = new Worker(
-  QUEUE_SYSTEM,
-  async (job) => {
-    switch (job.name) {
-      case 'heartbeat':
-        await beat();
-        return;
-      default:
-        throw new Error(`Unknown system job: ${job.name}`);
-    }
-  },
-  { connection, concurrency: 1 },
-);
+const workers: Worker[] = [
+  new Worker(
+    QUEUE_NAMES.system,
+    async (job) => {
+      switch (job.name) {
+        case 'heartbeat':
+          await beat();
+          return;
+        default:
+          throw new Error(`Unknown system job: ${job.name}`);
+      }
+    },
+    { connection, concurrency: 1 },
+  ),
+  createMailWorker({ connection, db, keyring, log }),
+];
 
-systemWorker.on('failed', (job, error) => {
-  log.error({ jobId: job?.id, job: job?.name, err: error }, 'job failed');
-});
+for (const worker of workers) {
+  worker.on('failed', (job, error) => {
+    log.error(
+      { queue: worker.name, jobId: job?.id, job: job?.name, err: error.message },
+      'job failed',
+    );
+  });
+}
 
 async function main(): Promise<void> {
   await beat();
@@ -53,8 +64,9 @@ async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
   log.info({ signal }, 'worker shutting down');
   // Let in-flight jobs finish before closing connections.
-  await systemWorker.close();
+  await Promise.all(workers.map((worker) => worker.close()));
   await systemQueue.close();
+  await db.$disconnect();
   await connection.quit();
   process.exit(0);
 }
