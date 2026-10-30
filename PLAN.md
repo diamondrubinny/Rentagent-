@@ -417,4 +417,4 @@ rentagent/
 ---
 
 ## 13. הצעד הבא
-שלבים 1–7 הושלמו — ראו `docs/phase-1.md` עד `docs/phase-7.md`, מדריך המפעיל `docs/OPERATOR.md`, ה־Checklist לפרודקשן `docs/PRODUCTION-CHECKLIST.md` ומדריך הרישוי `docs/LICENSING.md`. הבא: בדיקות מקצועיות (משפט, נגישות, חדירות), התקנת פיילוט אצל לקוח ראשון, ואז V2.
+שלבים 1–7 הושלמו — ראו `docs/phase-1.md` עד `docs/phase-7.md`, מדריך המפעיל `docs/OPERATOR.md`, ה־Checklist לפרודקשן `docs/PRODUCTION-CHECKLIST.md` ומדריך הרישוי `docs/LICENSING.md`. הבא: בדיקות מקצועיות (משפט, נגישות, חדירות), התקנת פיילוט אצל לקוח ראשון, ובמקביל V2 לפי `docs/v2-plan.md`.
