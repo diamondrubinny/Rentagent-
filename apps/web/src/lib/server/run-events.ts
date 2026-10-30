@@ -51,7 +51,22 @@ export async function runEventStream<S extends { status: string }>(
       send(first);
       if (TERMINAL.has(first.status)) return close();
 
-      subscriber.on('message', async (_channel: string, message: string) => {
+      // Snapshots are taken one after another: run concurrently, an older snapshot
+      // could finish last and leave the client on a stale status.
+      let queue: Promise<void> = Promise.resolve();
+      const refresh = () => {
+        queue = queue
+          .then(async () => {
+            if (closed) return;
+            const next = await snapshot();
+            if (!next) return close();
+            send(next);
+            if (TERMINAL.has(next.status)) await close();
+          })
+          .catch(() => close());
+        return queue;
+      };
+      subscriber.on('message', (_channel: string, message: string) => {
         let event: { type?: string; text?: unknown } = {};
         try {
           event = JSON.parse(message) as typeof event;
@@ -62,16 +77,12 @@ export async function runEventStream<S extends { status: string }>(
           write(`event: partial\ndata: ${JSON.stringify({ text: event.text })}\n\n`);
           return;
         }
-        const next = await snapshot();
-        if (!next) return close();
-        send(next);
-        if (TERMINAL.has(next.status)) await close();
+        void refresh();
       });
       await subscriber.subscribe(`run:${runId}`);
       // Catch updates that happened between the first snapshot and subscribing.
-      const latest = await snapshot();
-      if (latest) send(latest);
-      if (latest && TERMINAL.has(latest.status)) return close();
+      await refresh();
+      if (closed) return;
       heartbeat = setInterval(() => write(': keep-alive\n\n'), HEARTBEAT_MS);
       request.signal.addEventListener('abort', () => void close());
     },
