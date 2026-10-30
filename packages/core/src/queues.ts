@@ -20,7 +20,9 @@ export type SystemJob =
   /** Machine-translates UI strings (key -> English source) into a locale. */
   | { name: 'translate-locale'; data: { locale: string; entries: Record<string, string> } }
   /** Fills missing agent name/description translations for the given locales. */
-  | { name: 'translate-agent'; data: { agentId: string; locales: string[] } };
+  | { name: 'translate-agent'; data: { agentId: string; locales: string[] } }
+  /** Starts a scheduled task now (verified trigger call or "run now"); payload replaces {{payload}}. */
+  | { name: 'schedule-trigger'; data: { scheduleId: string; payload: string } };
 
 export type FileJob = { kind: 'scan'; fileId: string } | { kind: 'ingest'; sourceId: string };
 
@@ -32,6 +34,10 @@ export const MAIL_TEMPLATES = [
   'twoFactorDisabled',
   /** Message composed by an AI agent (after approval); has no button. */
   'agentMessage',
+  /** Scheduled tasks (V2.2): result ready, waiting for approval, paused after failures. */
+  'scheduleResult',
+  'scheduleApproval',
+  'scheduleStopped',
 ] as const;
 export type MailTemplate = (typeof MAIL_TEMPLATES)[number];
 
@@ -115,7 +121,9 @@ export async function enqueueSystemJob(redisUrl: string, job: SystemJob): Promis
     job.name === 'index-agent'
       ? `index-agent-${job.data.agentId}-${Math.floor(Date.now() / 5000)}`
       : undefined;
-  await globalForQueues.rentagentSystemQueue.add(job.name, job.data, { jobId });
+  // A trigger is never retried automatically: a retry could start a second run.
+  const attempts = job.name === 'schedule-trigger' ? 1 : undefined;
+  await globalForQueues.rentagentSystemQueue.add(job.name, job.data, { jobId, attempts });
 }
 
 /** Redis keys shared by the web app (proxy, message cache) and the worker. */

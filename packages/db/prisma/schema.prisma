@@ -134,6 +134,7 @@ model User {
   wallet        Wallet?
   subscriptions Subscription[]
   apiKeys       ApiKey[]
+  schedules     Schedule[]
 
   @@index([role])
   @@index([createdAt])
@@ -402,6 +403,7 @@ model Agent {
   runs          Run[]
   knowledge     KnowledgeSource[]
   conversations Conversation[]
+  schedules     Schedule[]
 
   @@index([status, featured])
   @@map("agents")
@@ -537,23 +539,26 @@ enum RunStepType {
 
 /// An end-user chat with one agent; every turn is a LIVE run.
 model Conversation {
-  id        String             @id @default(uuid()) @db.Uuid
-  userId    String             @map("user_id") @db.VarChar(64)
-  agentId   String             @map("agent_id") @db.Uuid
-  title     String             @db.VarChar(200)
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @map("user_id") @db.VarChar(64)
+  agentId    String             @map("agent_id") @db.Uuid
+  title      String             @db.VarChar(200)
   /// Where the conversation was started (web app or public API).
-  source    ConversationSource @default(WEB)
+  source     ConversationSource @default(WEB)
   /// The API key that started it (kept for usage reporting; cleared when the key is deleted).
-  apiKeyId  String?            @map("api_key_id") @db.Uuid
+  apiKeyId   String?            @map("api_key_id") @db.Uuid
   /// Widget conversations: the anonymous visitor (random id kept in their browser tab).
-  visitorId String?            @map("visitor_id") @db.VarChar(64)
-  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  visitorId  String?            @map("visitor_id") @db.VarChar(64)
+  /// Scheduled task that started it (cleared when the task is deleted).
+  scheduleId String?            @map("schedule_id") @db.Uuid
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent  Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
-  runs   Run[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  apiKey   ApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  schedule Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  runs     Run[]
 
   @@index([userId, updatedAt])
   @@index([apiKeyId, visitorId])
@@ -858,6 +863,7 @@ enum ConversationSource {
   WEB
   API
   WIDGET
+  SCHEDULE
 }
 
 enum ApiKeyKind {
@@ -895,4 +901,40 @@ model ApiKey {
 
   @@index([userId, createdAt])
   @@map("api_keys")
+}
+
+// ---------------------------------------------------------------- Scheduled tasks (V2.2)
+
+/// An agent task that runs on a cron schedule and/or when its trigger URL is called.
+model Schedule {
+  id                     String    @id @default(uuid()) @db.Uuid
+  userId                 String    @map("user_id") @db.VarChar(64)
+  agentId                String    @map("agent_id") @db.Uuid
+  name                   String    @db.VarChar(80)
+  /// Task fields; "{{payload}}" in a value is replaced by the trigger request body.
+  input                  Json
+  locale                 String    @db.VarChar(35)
+  /// 5-field cron expression; null = runs only from its trigger URL.
+  cron                   String?   @db.VarChar(100)
+  timeZone               String    @map("time_zone") @db.VarChar(64)
+  enabled                Boolean   @default(true)
+  nextRunAt              DateTime? @map("next_run_at") @db.Timestamptz(3)
+  lastRunAt              DateTime? @map("last_run_at") @db.Timestamptz(3)
+  lastStatus             String?   @map("last_status") @db.VarChar(20)
+  consecutiveFailures    Int       @default(0) @map("consecutive_failures")
+  /// Email the owner when a run finishes or needs approval.
+  notifyEmail            Boolean   @default(true) @map("notify_email")
+  /// Incoming trigger: public id in the URL and HMAC secret (encrypted); null = no trigger.
+  triggerId              String?   @unique @map("trigger_id") @db.VarChar(32)
+  triggerSecretEncrypted String?   @map("trigger_secret_encrypted") @db.Text
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent         Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([enabled, nextRunAt])
+  @@index([userId, createdAt])
+  @@map("schedules")
 }

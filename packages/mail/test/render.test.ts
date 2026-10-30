@@ -8,6 +8,10 @@ const vars = {
   name: 'Dana',
   siteName: 'Agents',
   url: 'https://agents.example.com/verify?token=abc',
+  // Scheduled task templates
+  task: 'Daily report',
+  count: '3',
+  reason: 'insufficientCredits',
 };
 
 describe('renderMail', () => {

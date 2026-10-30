@@ -1,12 +1,11 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
-import { toVectorLiteral } from '@rentagent/agent-runtime';
+import { loadRunnableAgent, type RunnableAgent, toVectorLiteral } from '@rentagent/agent-runtime';
 import { embedTexts } from '@rentagent/ai-gateway';
 import { rateLimit } from '@rentagent/core';
 import { getSetting } from '@rentagent/db';
 import {
   AGENT_CATEGORIES,
-  type AgentConfig,
   agentConfigSchema,
   foldForSearch,
   localizedAgent,
@@ -156,34 +155,14 @@ export async function relatedAgents(
   }
 }
 
-export interface RunnableAgent {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  category: string;
-  versionId: string;
-  config: AgentConfig;
-}
+export type { RunnableAgent };
 
 /** A published agent with its current published configuration, or null. */
 export async function runnableAgent(
   where: { slug: string } | { id: string },
   locale: string,
 ): Promise<RunnableAgent | null> {
-  const agent = await db().agent.findFirst({
-    where: { ...where, ...publishedWhere },
-    select: { ...select, publishedVersionId: true },
-  });
-  if (!agent?.publishedVersionId) return null;
-  const version = await db().agentVersion.findUnique({ where: { id: agent.publishedVersionId } });
-  const parsed = agentConfigSchema.safeParse(version?.config);
-  if (!version || !parsed.success) return null;
-  return {
-    ...toCatalogAgent(agent, locale),
-    versionId: version.id,
-    config: parsed.data,
-  };
+  return loadRunnableAgent(db(), where, locale);
 }
 
 /** Published agents with their configuration in one batch (API listing); optionally limited. */

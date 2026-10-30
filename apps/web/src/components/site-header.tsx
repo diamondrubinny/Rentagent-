@@ -10,7 +10,9 @@ import { getSiteConfig } from '@/lib/server/site';
 export async function SiteHeader({ siteName }: { siteName: string }) {
   const t = await getTranslations('Header');
   const site = await getSiteConfig();
-  const { branding } = site.setupComplete ? await getBranding() : { branding: null };
+  const { branding, features } = site.setupComplete
+    ? await getBranding()
+    : { branding: null, features: null };
   const user = site.setupComplete ? await getCurrentUser() : null;
   const balance = user ? await walletBalanceLabel(user.id, await getLocale()) : null;
   return (
@@ -46,6 +48,13 @@ export async function SiteHeader({ siteName }: { siteName: string }) {
                     {t('chats')}
                   </Link>
                 </li>
+                {features?.schedules && (
+                  <li>
+                    <Link className="link" href="/schedules">
+                      {t('schedules')}
+                    </Link>
+                  </li>
+                )}
                 {balance !== null && (
                   <li>
                     <Link className="link" href="/account/billing">

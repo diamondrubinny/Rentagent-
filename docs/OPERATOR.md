@@ -33,6 +33,7 @@ Turn on two-factor authentication right away: the admin area requires it.
 | **Billing** | Currency, credit packs, signup credit; connect Stripe and/or PayPal; subscription plans. Webhook endpoints are shown on the page. |
 | **Branding** | Main color (contrast-checked), logo, favicon, feature switches (answer ratings, semantic search, accessibility menu). |
 | **API keys** | Turn on *Public API for users* (Branding › Features) to let users create keys and use agents from their own systems (see `docs/API.md`). Review active keys and revoke misused ones here. |
+| **Scheduled tasks** | Turn on *Scheduled tasks* (Branding › Features) to let users run agents on a schedule (at most hourly) or from a signed trigger URL. Runs use their credits and daily limit; tasks pause themselves after 3 failures in a row. |
 | **Webhooks** | Signed notifications to your CRM or other systems (new users, finished runs, payments). |
 | **Legal pages** | Your company details, accessibility coordinator, your own texts — see section 4. |
 | **License** | Paste your license key — see section 5. |

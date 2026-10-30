@@ -8,6 +8,7 @@ import { settleOrphanRuns, settleRun } from '@rentagent/billing';
 import { createFileWorker } from './files';
 import { checkLicense } from './license';
 import { purgeRecords } from './retention';
+import { onScheduledRunUpdate, runDueSchedules, startScheduledRun } from './schedules';
 import { indexAgent, purgeExpired, reindexAgents } from './maintenance';
 import { translateAgent, translateLocale } from './translate';
 import { createMailWorker } from './mail';
@@ -84,6 +85,27 @@ const workers: Worker[] = [
         case 'reindex-agents':
           log.info({ agents: await reindexAgents(runtimeDeps) }, 'agents reindexed');
           return;
+        case 'schedules-tick':
+          await runDueSchedules(runtimeDeps);
+          return;
+        case 'schedule-trigger': {
+          // Queued by the web app after verifying the trigger signature.
+          const data = job.data as { scheduleId: string; payload: string };
+          const schedule = await db.schedule.findFirst({
+            where: { id: data.scheduleId, enabled: true },
+            select: {
+              id: true,
+              userId: true,
+              agentId: true,
+              name: true,
+              input: true,
+              locale: true,
+              notifyEmail: true,
+            },
+          });
+          if (schedule) await startScheduledRun(runtimeDeps, schedule, data.payload);
+          return;
+        }
         case 'license-check':
           await checkLicense({ db, log }, env);
           return;
@@ -119,6 +141,13 @@ const workers: Worker[] = [
       if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'CANCELED')
         await settleRun(db, job.data.runId);
       if (status === 'SUCCEEDED' || status === 'FAILED') await emitRunEvent(job.data.runId);
+      if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'WAITING_APPROVAL') {
+        const run = await db.run.findUnique({
+          where: { id: job.data.runId },
+          select: { id: true, status: true, errorKind: true, conversationId: true },
+        });
+        if (run) await onScheduledRunUpdate(runtimeDeps, run);
+      }
     },
     {
       connection,
@@ -166,6 +195,11 @@ async function main(): Promise<void> {
     'retention',
     { every: 60 * 60 * 1000, immediately: true },
     { name: 'retention', opts: { removeOnComplete: true, removeOnFail: 100 } },
+  );
+  await systemQueue.upsertJobScheduler(
+    'schedules-tick',
+    { every: 60 * 1000, immediately: true },
+    { name: 'schedules-tick', opts: { removeOnComplete: true, removeOnFail: 100 } },
   );
   await systemQueue.upsertJobScheduler(
     'license-check',

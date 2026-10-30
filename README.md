@@ -42,6 +42,8 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
   streaming, approvals and OpenAPI 3.1; staff overview and revocation.
 - V2.1b (website widget): one-line embed script, iframe limited to allowed sites, invisible
   proof-of-work check (ALTCHA), per-visitor isolation, daily run cap, owner approvals.
+- V2.2 (scheduled tasks): cron schedules with time zones (at most hourly) and signed trigger URLs,
+  run by the worker exactly once, result/approval emails, auto-pause after repeated failures.
 
 ## Repository layout
 

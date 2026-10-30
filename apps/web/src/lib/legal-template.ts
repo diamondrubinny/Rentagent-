@@ -29,6 +29,7 @@ export const TEMPLATE_FACTS = [
   'feedback',
   'publicApi',
   'widget',
+  'schedules',
   'smtp',
   'trackers',
 ] as const;

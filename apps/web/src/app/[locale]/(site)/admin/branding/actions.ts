@@ -107,6 +107,7 @@ export async function saveFeatures(input: {
   semanticSearch: boolean;
   a11yWidget: boolean;
   publicApi: boolean;
+  schedules: boolean;
   hidePoweredBy: boolean;
 }): Promise<BrandingResult> {
   const actor = await authorizeAction('settings.manage');
@@ -116,6 +117,7 @@ export async function saveFeatures(input: {
     semanticSearch: input.semanticSearch === true,
     a11yWidget: input.a11yWidget === true,
     publicApi: input.publicApi === true,
+    schedules: input.schedules === true,
   };
   await db().setting.upsert(settingUpsert('features', features, actor.id));
   await save(

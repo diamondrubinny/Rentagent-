@@ -1,6 +1,6 @@
 import 'server-only';
 import {
-  conversationTitle,
+  createFirstTurn,
   followUpMessages,
   USER_MESSAGE_MAX_CHARS,
 } from '@rentagent/agent-runtime';
@@ -9,7 +9,7 @@ import { settleBeforeDelete } from '@rentagent/billing';
 import { enqueueRun, getServerEnv, rateLimit } from '@rentagent/core';
 import { isSupportedLocale, normalizeText, runInputSchema } from '@rentagent/shared';
 import { z } from 'zod';
-import { InsufficientCreditsError, reserveCredits } from './billing';
+import { getBillingConfig, InsufficientCreditsError, reserveCredits } from './billing';
 import { runnableAgent } from './catalog';
 import { ACTIVE_RUN_STATUSES } from './runs';
 import { db, redis } from './runtime';
@@ -102,44 +102,24 @@ export async function startConversationFor(
   const quota = await checkRunQuota(userId, origin);
   if (quota) return quota;
 
-  const runId = randomUUID();
-  let conversationId: string;
+  let started: { conversationId: string; runId: string };
   try {
-    conversationId = await db().$transaction(async (tx) => {
-      const conversation = await tx.conversation.create({
-        data: {
-          userId,
-          agentId: agent.id,
-          title: conversationTitle(parsed.data, agent.name),
-          source: origin.source,
-          apiKeyId: origin.apiKeyId ?? null,
-          visitorId: origin.visitorId ?? null,
-        },
-      });
-      const billing = await reserveCredits(tx, userId, agent.config, runId);
-      await tx.run.create({
-        data: {
-          id: runId,
-          agentId: agent.id,
-          agentVersionId: agent.versionId,
-          conversationId: conversation.id,
-          config: agent.config as object,
-          userId,
-          mode: 'LIVE',
-          locale: localeOf(locale),
-          input: parsed.data as object,
-          ...billing,
-        },
-      });
-      return conversation.id;
+    started = await createFirstTurn(db(), await getBillingConfig(), {
+      userId,
+      agent,
+      input: parsed.data,
+      locale: localeOf(locale),
+      source: origin.source,
+      apiKeyId: origin.apiKeyId,
+      visitorId: origin.visitorId,
     });
   } catch (error) {
     if (error instanceof InsufficientCreditsError)
       return { ok: false, error: 'insufficientCredits' };
     throw error;
   }
-  await enqueueRun(getServerEnv().REDIS_URL, runId);
-  return { ok: true, id: conversationId };
+  await enqueueRun(getServerEnv().REDIS_URL, started.runId);
+  return { ok: true, id: started.conversationId };
 }
 
 const messageSchema = z

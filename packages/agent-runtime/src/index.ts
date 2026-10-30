@@ -7,3 +7,4 @@ export * from './net-guard';
 export * from './text';
 export * from './tools';
 export * from '../templates';
+export * from './start';

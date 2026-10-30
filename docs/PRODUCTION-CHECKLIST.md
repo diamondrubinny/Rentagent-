@@ -14,6 +14,8 @@ compliant with any law or standard by itself.
 - [ ] Billing (if enabled): a test payment, a refund and (if used) a subscription renewal are
       reflected correctly in the user's balance and in Admin › Billing.
 - [ ] Webhooks (if used): your receiver verifies the signature and handles retries.
+- [ ] Scheduled tasks (if on): a daily task runs once at the right local time; a trigger with a
+      wrong signature is refused; result emails arrive.
 - [ ] Website widget (if used): it opens on an allowed site and is refused on another; the daily
       limit fits your credits; a visitor cannot see another visitor's chat.
 - [ ] Public API (if enabled): a test key works end to end; another user's key gets 404 for your
@@ -81,6 +83,7 @@ in your records of processing.
 | AI usage: tokens, cost, model, user link | Cost control, billing | Legitimate interest | `ai_usage_records` | User link removed after 395 days; totals kept | — |
 | Credits: balance, ledger, payments, subscriptions | Billing, accounting | Contract; legal obligation | `wallets`, `ledger_entries`, `payments`, `subscriptions` | ⚖ accounting law (ledger/payments keep an opaque user id after account deletion) | Stripe / PayPal |
 | API keys (if the public API is on): name, scopes, agent list, dates; secret stored only as SHA-256 hash | API access | Contract | Until revoked or account deletion | — |
+| Scheduled tasks (if on): name, task fields, schedule, trigger data; trigger secret encrypted | Running users' tasks | Contract | Until the task is deleted (results like chats) | — |
 | Audit log: actor id, action, one-way IP hash | Security, accountability | Legitimate interest | `audit_logs` | 365 days | — |
 | Consent records: random id, choices, policy version | Proof of cookie consent | Legal obligation | `consent_records` | 395 days | — |
 | Webhook deliveries: event payloads (no chat content), response codes | Integrations | Legitimate interest | `webhook_deliveries` | 30 days | Your webhook receivers |

@@ -2,12 +2,10 @@ import 'server-only';
 import {
   type BillingConfig,
   decimalToMinor,
-  holdForRun,
   InsufficientCreditsError,
   loadBillingConfig,
-  lockWallet,
-  minorToMicros,
-  planHold,
+  reserveRunCredits,
+  type RunBilling,
 } from '@rentagent/billing';
 import type { Prisma } from '@rentagent/db';
 import { type AgentConfig, formatMoney } from '@rentagent/shared';
@@ -22,46 +20,14 @@ export const getBillingConfig = cache((): Promise<BillingConfig> =>
   loadBillingConfig(db(), encryptionKeyring()),
 );
 
-export interface RunBilling {
-  holdMinor: bigint;
-  priceLimitMicros: bigint | null;
-}
-
-const FREE: RunBilling = { holdMinor: 0n, priceLimitMicros: null };
-
-/**
- * Reserves credits for a live run inside the transaction that creates it.
- * Throws InsufficientCreditsError when the wallet cannot cover the hold.
- */
+/** Reserves credits for a live run inside the transaction that creates it. */
 export async function reserveCredits(
   tx: Prisma.TransactionClient,
   userId: string,
   config: AgentConfig,
   runId: string,
 ): Promise<RunBilling> {
-  const billing = await getBillingConfig();
-  if (!billing.settings.enabled || config.pricing.mode === 'free') return FREE;
-  const { currency } = billing;
-  const wallet = await lockWallet(
-    tx,
-    userId,
-    currency,
-    decimalToMinor(billing.settings.signupCredit || '0', currency),
-  );
-  const plan = planHold(
-    {
-      mode: config.pricing.mode,
-      perTaskMinor: config.pricing.perTask ? decimalToMinor(config.pricing.perTask, currency) : 0n,
-      maxPerTaskMinor: config.pricing.maxPerTask
-        ? decimalToMinor(config.pricing.maxPerTask, currency)
-        : 0n,
-    },
-    wallet.balanceMinor,
-    (minor) => minorToMicros(minor, currency),
-  );
-  if (!plan) throw new InsufficientCreditsError();
-  await holdForRun(tx, wallet, runId, plan.holdMinor);
-  return plan;
+  return reserveRunCredits(tx, await getBillingConfig(), userId, config.pricing, runId);
 }
 
 /** Formatted spendable balance for the header, or null when billing is off. */

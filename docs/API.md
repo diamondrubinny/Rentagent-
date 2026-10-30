@@ -120,6 +120,25 @@ body tag:
   them there — visitors cannot approve.
 - No cookies are set on the host site.
 
+## Scheduled task triggers
+
+When the operator enables scheduled tasks, a user can give a task a trigger URL
+(`POST /api/hooks/schedules/<id>`). Requests are signed like outgoing webhooks:
+
+```
+x-rentagent-signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "<t>.<raw body>")>
+```
+
+Requests older than 5 minutes, repeated requests, bodies over 64 KB and more than 60 calls per hour
+are refused. The raw body (e.g. JSON) replaces `{{payload}}` in the task's fields. Responses:
+`202` accepted, `401` unknown trigger or bad signature, `409` duplicate, `413` too large, `429`.
+
+```bash
+BODY='{"order":42}'; T=$(date +%s)
+SIG=$(printf '%s.%s' "$T" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/.* //')
+curl -s -X POST "$TRIGGER_URL" -H "x-rentagent-signature: t=$T,v1=$SIG" -d "$BODY"
+```
+
 ## Privacy
 
 The key owner decides what data is sent through the API and is responsible for having a legal basis

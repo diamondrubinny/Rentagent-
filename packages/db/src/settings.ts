@@ -71,6 +71,8 @@ export interface SettingValues {
     a11yWidget: boolean;
     /** Users may create API keys and use agents through the public API. */
     publicApi: boolean;
+    /** Users may create scheduled and triggered agent tasks. */
+    schedules: boolean;
   };
   /** Operator details and document state for the legal pages. */
   legal: {

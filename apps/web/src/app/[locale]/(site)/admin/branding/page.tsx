@@ -68,6 +68,7 @@ export default async function BrandingPage({ params }: PageProps) {
           semanticSearch={features.semanticSearch}
           a11yWidget={features.a11yWidget}
           publicApi={features.publicApi}
+          schedules={features.schedules}
           hidePoweredBy={branding.hidePoweredBy}
           whiteLabel={await whiteLabelAllowed()}
         />

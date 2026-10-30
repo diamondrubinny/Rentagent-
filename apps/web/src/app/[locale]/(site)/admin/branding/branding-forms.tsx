@@ -226,6 +226,7 @@ export function FeaturesForm({
   semanticSearch,
   a11yWidget,
   publicApi,
+  schedules,
   hidePoweredBy,
   whiteLabel,
 }: {
@@ -233,6 +234,7 @@ export function FeaturesForm({
   semanticSearch: boolean;
   a11yWidget: boolean;
   publicApi: boolean;
+  schedules: boolean;
   hidePoweredBy: boolean;
   /** The license allows removing the credit line. */
   whiteLabel: boolean;
@@ -251,6 +253,7 @@ export function FeaturesForm({
             semanticSearch: form.get('semanticSearch') === 'on',
             a11yWidget: form.get('a11yWidget') === 'on',
             publicApi: form.get('publicApi') === 'on',
+            schedules: form.get('schedules') === 'on',
             hidePoweredBy: form.get('hidePoweredBy') === 'on',
           }),
         );
@@ -260,27 +263,34 @@ export function FeaturesForm({
       {result && !result.ok && (
         <FormMessage tone="error">{t(`errors.${result.error}`)}</FormMessage>
       )}
-      {(['feedback', 'semanticSearch', 'a11yWidget', 'publicApi', 'hidePoweredBy'] as const).map(
-        (name) => (
-          <label key={name} className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              name={name}
-              defaultChecked={
-                { feedback, semanticSearch, a11yWidget, publicApi, hidePoweredBy }[name]
-              }
-              className="mt-1 size-5"
-            />
-            <span>
-              <span className="block font-semibold">{t(`feature_${name}`)}</span>
-              <span className="block text-sm text-muted">{t(`feature_${name}Hint`)}</span>
-              {name === 'hidePoweredBy' && !whiteLabel && (
-                <span className="block text-sm font-semibold">{t('needsWhiteLabel')}</span>
-              )}
-            </span>
-          </label>
-        ),
-      )}
+      {(
+        [
+          'feedback',
+          'semanticSearch',
+          'a11yWidget',
+          'publicApi',
+          'schedules',
+          'hidePoweredBy',
+        ] as const
+      ).map((name) => (
+        <label key={name} className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            name={name}
+            defaultChecked={
+              { feedback, semanticSearch, a11yWidget, publicApi, schedules, hidePoweredBy }[name]
+            }
+            className="mt-1 size-5"
+          />
+          <span>
+            <span className="block font-semibold">{t(`feature_${name}`)}</span>
+            <span className="block text-sm text-muted">{t(`feature_${name}Hint`)}</span>
+            {name === 'hidePoweredBy' && !whiteLabel && (
+              <span className="block text-sm font-semibold">{t('needsWhiteLabel')}</span>
+            )}
+          </span>
+        </label>
+      ))}
       <SubmitButton pending={pending} pendingLabel={t('saving')}>
         {t('save')}
       </SubmitButton>

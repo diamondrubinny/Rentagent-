@@ -98,6 +98,7 @@ async function installationFacts(locale: string): Promise<TemplateFacts> {
     feedback: branding.features.feedback,
     publicApi: branding.features.publicApi,
     widget: branding.features.publicApi && widgets > 0,
+    schedules: branding.features.schedules,
     smtp: site.smtpEnabled,
     trackers: site.optionalTrackersEnabled,
   };

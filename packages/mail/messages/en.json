@@ -44,5 +44,26 @@
     "body": "{body}",
     "button": "",
     "note": "This message was written by an AI agent on {siteName}. Reply to the sender if anything looks wrong."
+  },
+  "scheduleResult": {
+    "subject": "{siteName}: {task}: the result is ready",
+    "heading": "Your scheduled task finished",
+    "body": "Hi {name}, your scheduled task \"{task}\" on {siteName} finished. Open it to read the answer.",
+    "button": "Open the result",
+    "note": "You can turn off these emails in the task settings."
+  },
+  "scheduleApproval": {
+    "subject": "{siteName}: {task} needs your approval",
+    "heading": "An action is waiting for you",
+    "body": "Hi {name}, the agent in your scheduled task \"{task}\" wants to take an action that needs your approval.",
+    "button": "Review the action",
+    "note": "Nothing happens until you approve it."
+  },
+  "scheduleStopped": {
+    "subject": "{siteName}: {task} was paused",
+    "heading": "A scheduled task was paused",
+    "body": "Hi {name}, your scheduled task \"{task}\" failed {count} times in a row ({reason}) and was paused so it does not use more credits.",
+    "button": "Open scheduled tasks",
+    "note": "You can resume it after fixing the problem."
   }
 }
