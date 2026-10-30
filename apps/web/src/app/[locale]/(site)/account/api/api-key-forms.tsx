@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useRef, useState, useTransition } from 'react';
 import { FormMessage, SubmitButton, TextField } from '@/components/forms';
 import { useRouter } from '@/i18n/navigation';
-import { type ApiKeyResult, createApiKey, revokeApiKey } from './actions';
+import { type ApiKeyResult, createApiKey, createWidgetKey, revokeApiKey } from './actions';
 
 const SCOPES = ['agents:read', 'conversations:write', 'approvals:write'] as const;
 const EXPIRY = [90, 30, 365, 0] as const;
@@ -205,6 +205,166 @@ export function RevokeKeyButton({ id, describedBy }: { id: string; describedBy: 
           {t('errors.notFound')}
         </span>
       )}
+    </div>
+  );
+}
+
+/** Creates a website widget key and shows the snippet to paste into the site. */
+export function CreateWidgetForm({
+  agents,
+  siteUrl,
+  locale,
+}: {
+  agents: { id: string; name: string }[];
+  siteUrl: string;
+  locale: string;
+}) {
+  const t = useTranslations('ApiKeys');
+  const tValidation = useTranslations('Validation');
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<ApiKeyResult | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    startTransition(async () => {
+      const next = await createWidgetKey({
+        name: String(form.get('name') ?? ''),
+        agentId: String(form.get('agentId') ?? ''),
+        origins: String(form.get('origins') ?? ''),
+        dailyRunLimit: String(form.get('dailyRunLimit') ?? ''),
+      });
+      setResult(next);
+      if (next.ok) {
+        formRef.current?.reset();
+        router.refresh();
+      }
+    });
+  }
+
+  const fieldErrors = result && !result.ok ? (result.fieldErrors ?? {}) : {};
+  const error = (name: string) => (fieldErrors[name] ? tValidation(fieldErrors[name]) : undefined);
+  return (
+    <div className="space-y-6">
+      {result?.ok && result.token && (
+        <div role="status" className="space-y-2 rounded-lg border border-success bg-success-bg p-4">
+          <p className="font-semibold">{t('widgetCreated')}</p>
+          <WidgetSnippet token={result.token} siteUrl={siteUrl} locale={locale} />
+        </div>
+      )}
+      <form ref={formRef} onSubmit={onSubmit} className="space-y-5" noValidate>
+        {result && !result.ok && (
+          <FormMessage tone="error">{t(`errors.${result.error}`)}</FormMessage>
+        )}
+        <TextField name="name" label={t('name')} maxLength={80} error={error('name')} />
+        <div>
+          <label htmlFor="widget-agent" className="mb-1 block font-semibold">
+            {t('widgetAgent')}
+          </label>
+          <select
+            id="widget-agent"
+            name="agentId"
+            className="field-input"
+            aria-invalid={Boolean(fieldErrors.agentId)}
+            aria-describedby={fieldErrors.agentId ? 'widget-agent-error' : undefined}
+          >
+            {agents.map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </select>
+          {fieldErrors.agentId && (
+            <p id="widget-agent-error" className="mt-1 text-sm font-semibold text-danger">
+              {tValidation(fieldErrors.agentId)}
+            </p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="widget-origins" className="mb-1 block font-semibold">
+            {t('widgetOrigins')}
+          </label>
+          <p id="widget-origins-hint" className="mb-1 text-sm text-muted">
+            {t('widgetOriginsHint')}
+          </p>
+          <textarea
+            id="widget-origins"
+            name="origins"
+            rows={3}
+            dir="ltr"
+            placeholder="https://www.example.com"
+            className="field-input font-mono text-sm"
+            aria-invalid={Boolean(fieldErrors.origins)}
+            aria-describedby={`widget-origins-hint${fieldErrors.origins ? ' widget-origins-error' : ''}`}
+          />
+          {fieldErrors.origins && (
+            <p id="widget-origins-error" className="mt-1 text-sm font-semibold text-danger">
+              {tValidation(fieldErrors.origins)}
+            </p>
+          )}
+        </div>
+        <TextField
+          name="dailyRunLimit"
+          label={t('widgetDailyLimit')}
+          hint={t('widgetDailyLimitHint')}
+          type="number"
+          min={1}
+          max={100000}
+          defaultValue="100"
+          error={error('dailyRunLimit')}
+        />
+        <SubmitButton pending={pending} pendingLabel={t('creating')}>
+          {t('widgetCreate')}
+        </SubmitButton>
+      </form>
+    </div>
+  );
+}
+
+/** The code to paste before </body> on the allowed sites. */
+export function WidgetSnippet({
+  token,
+  siteUrl,
+  locale,
+}: {
+  token: string;
+  siteUrl: string;
+  locale: string;
+}) {
+  const t = useTranslations('ApiKeys');
+  const [copied, setCopied] = useState(false);
+  const code = `<script src="${siteUrl}/embed.js" data-key="${token}" data-locale="${locale}" data-label="${t('widgetDefaultLabel')}" async></script>`;
+  const id = `snippet-${token.slice(-8)}`;
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-sm font-semibold">
+        {t('widgetSnippet')}
+      </label>
+      <textarea
+        id={id}
+        readOnly
+        value={code}
+        rows={3}
+        dir="ltr"
+        className="field-input font-mono text-xs"
+        onFocus={(event) => event.currentTarget.select()}
+      />
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+          } catch {
+            document.getElementById(id)?.focus();
+          }
+        }}
+      >
+        {copied ? t('copied') : t('copy')}
+      </button>
     </div>
   );
 }

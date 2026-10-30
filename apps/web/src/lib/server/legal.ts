@@ -46,15 +46,17 @@ const MISSING: Record<string, string> = {
 
 /** What this installation actually does, for the document templates. */
 async function installationFacts(locale: string): Promise<TemplateFacts> {
-  const [site, legal, billing, branding, providers, webhooks, embedding] = await Promise.all([
-    getSiteConfig(),
-    getLegalSettings(),
-    getBillingConfig(),
-    getBranding(),
-    db().provider.findMany({ where: { enabled: true }, select: { type: true, name: true } }),
-    db().webhook.count({ where: { enabled: true } }),
-    getSetting(db(), 'ai.embeddingModelId'),
-  ]);
+  const [site, legal, billing, branding, providers, webhooks, embedding, widgets] =
+    await Promise.all([
+      getSiteConfig(),
+      getLegalSettings(),
+      getBillingConfig(),
+      getBranding(),
+      db().provider.findMany({ where: { enabled: true }, select: { type: true, name: true } }),
+      db().webhook.count({ where: { enabled: true } }),
+      getSetting(db(), 'ai.embeddingModelId'),
+      db().apiKey.count({ where: { kind: 'PUBLISHABLE', revokedAt: null } }),
+    ]);
   const missing = MISSING[locale] ?? MISSING.en!;
   const or = (value: string) => value.trim() || missing;
   const providerNames = [
@@ -95,6 +97,7 @@ async function installationFacts(locale: string): Promise<TemplateFacts> {
     semanticSearch: Boolean(embedding) && branding.features.semanticSearch,
     feedback: branding.features.feedback,
     publicApi: branding.features.publicApi,
+    widget: branding.features.publicApi && widgets > 0,
     smtp: site.smtpEnabled,
     trackers: site.optionalTrackersEnabled,
   };

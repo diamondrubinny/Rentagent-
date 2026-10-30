@@ -40,6 +40,8 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
   and dependency license policy in CI.
 - V2.1a (public API): user API keys with scopes, agent restrictions and expiry; REST API with
   streaming, approvals and OpenAPI 3.1; staff overview and revocation.
+- V2.1b (website widget): one-line embed script, iframe limited to allowed sites, invisible
+  proof-of-work check (ALTCHA), per-visitor isolation, daily run cap, owner approvals.
 
 ## Repository layout
 

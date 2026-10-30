@@ -545,6 +545,8 @@ model Conversation {
   source    ConversationSource @default(WEB)
   /// The API key that started it (kept for usage reporting; cleared when the key is deleted).
   apiKeyId  String?            @map("api_key_id") @db.Uuid
+  /// Widget conversations: the anonymous visitor (random id kept in their browser tab).
+  visitorId String?            @map("visitor_id") @db.VarChar(64)
   createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -554,6 +556,7 @@ model Conversation {
   runs   Run[]
 
   @@index([userId, updatedAt])
+  @@index([apiKeyId, visitorId])
   @@index([updatedAt])
   @@map("conversations")
 }
@@ -854,25 +857,38 @@ model Subscription {
 enum ConversationSource {
   WEB
   API
+  WIDGET
+}
+
+enum ApiKeyKind {
+  /// Server-to-server key (ra_sk_…); the secret is shown once.
+  SECRET
+  /// Website widget key (ra_pk_…): public, one agent, allowed sites and a daily run cap.
+  PUBLISHABLE
 }
 
 /// A user's key for the public API. Only a SHA-256 hash of the secret part is stored;
 /// the full key (ra_sk_<keyId>_<secret>) is shown once at creation.
 model ApiKey {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.VarChar(64)
-  name       String    @db.VarChar(80)
+  id            String     @id @default(uuid()) @db.Uuid
+  userId        String     @map("user_id") @db.VarChar(64)
+  name          String     @db.VarChar(80)
   /// Public identifier inside the key, used for lookup.
-  keyId      String    @unique @map("key_id") @db.VarChar(32)
-  secretHash String    @map("secret_hash") @db.Char(64)
+  kind          ApiKeyKind @default(SECRET)
+  keyId         String     @unique @map("key_id") @db.VarChar(32)
+  secretHash    String     @map("secret_hash") @db.Char(64)
   /// agents:read, conversations:write, approvals:write
-  scopes     String[]
+  scopes        String[]
   /// Agents the key may use; empty = every agent the user may use.
-  agentIds   String[]  @map("agent_ids") @db.Uuid
-  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(3)
-  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(3)
-  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  agentIds      String[]   @map("agent_ids") @db.Uuid
+  /// Widget keys: sites allowed to embed the widget (https origins).
+  origins       String[]
+  /// Widget keys: maximum runs per day across all visitors (protects the owner's credits).
+  dailyRunLimit Int?       @map("daily_run_limit")
+  lastUsedAt    DateTime?  @map("last_used_at") @db.Timestamptz(3)
+  expiresAt     DateTime?  @map("expires_at") @db.Timestamptz(3)
+  revokedAt     DateTime?  @map("revoked_at") @db.Timestamptz(3)
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations Conversation[]

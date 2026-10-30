@@ -29,7 +29,12 @@ export async function runEventStream<S extends { status: string }>(
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       const write = (chunk: string) => {
-        if (!closed) controller.enqueue(encoder.encode(chunk));
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(chunk));
+        } catch {
+          closed = true; // cancelled by the client between checks
+        }
       };
       const send = (data: unknown) => write(`data: ${stringify(data)}\n\n`);
       const close = async () => {
@@ -37,7 +42,11 @@ export async function runEventStream<S extends { status: string }>(
         closed = true;
         clearInterval(heartbeat);
         await subscriber.quit().catch(() => undefined);
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // The client already cancelled the stream (disconnect during close).
+        }
       };
       send(first);
       if (TERMINAL.has(first.status)) return close();

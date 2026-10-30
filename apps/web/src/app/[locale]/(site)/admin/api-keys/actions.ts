@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { type ActionResult, authorizeAction } from '@/lib/server/admin-action';
 import { audit } from '@/lib/server/audit';
 import { db } from '@/lib/server/runtime';
+import { publishWidgetOrigins } from '@/lib/server/widget';
 
 /** Staff can stop any key (abuse, leaked key); the owner sees it as revoked. */
 export async function adminRevokeApiKey(id: string): Promise<ActionResult> {

@@ -23,7 +23,7 @@ reference is served by every installation at `https://<site>/api/v1/openapi.json
 | `approvals:write` | Approve or reject actions agents ask permission for |
 
 **Use keys only on servers you control.** The API sends no CORS headers, so browsers on other sites
-cannot call it; an embeddable widget for websites is planned separately (V2.1b).
+cannot call it. For websites, use the widget below.
 
 ## Authentication and errors
 
@@ -95,9 +95,36 @@ When a turn reaches `WAITING_APPROVAL`, show `approvals[].tool` and `approvals[]
 person responsible and send their decision to `POST /approvals/{id}`. Agents never perform such
 actions without a decision.
 
+## Website widget
+
+A chat with one agent for the user's own website. Create it under **My account › API keys ›
+Website widget** (agent, allowed sites, daily run limit) and paste the snippet before the closing
+body tag:
+
+```html
+<script src="https://agents.example.com/embed.js" data-key="ra_pk_…" data-locale="he"
+        data-label="Chat with us" data-position="right" data-color="#1d4ed8" async></script>
+```
+
+- The script adds an accessible button; the chat opens in an iframe from the agent site
+  (`/<locale>/embed/<key id>`), loaded only when opened. Escape closes it and returns focus.
+- **Allowed sites** are enforced by the browser: the embed page sends
+  `Content-Security-Policy: frame-ancestors <allowed sites>` (other pages keep
+  `X-Frame-Options: DENY`). Revoking the key stops framing and sessions within seconds.
+- The key is public by design. Abuse is limited by: an invisible proof-of-work check
+  ([ALTCHA](https://github.com/altcha-org/altcha), self-hosted, no cookies or third parties) before a
+  visitor session, single-use challenges, signed 12-hour visitor sessions, 5 runs/minute per visitor,
+  and the **daily run limit** of the key (runs are billed to the key owner).
+- Each visitor only sees their own conversation (kept in the tab's session storage). Conversations
+  appear in the owner's chat history; actions that need approval wait for the **owner** to approve
+  them there — visitors cannot approve.
+- No cookies are set on the host site.
+
 ## Privacy
 
 The key owner decides what data is sent through the API and is responsible for having a legal basis
-for it (they act as controller for their own customers' data). Conversations follow the site's
+for it (they act as controller for their own customers' data). With the widget, the website owner is
+responsible for informing their visitors (e.g. in their own privacy policy) that the chat is provided
+by this service. Conversations follow the site's
 retention period and can be deleted through the API at any time. Key metadata (name, scopes, dates)
 is included in the owner's data export; secrets never are.

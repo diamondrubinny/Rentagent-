@@ -6,10 +6,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { ClientMessages } from '@/components/client-messages';
-import { AccessibilityMenu } from '@/components/a11y/accessibility-menu';
-import { SiteFooter } from '@/components/site-footer';
 import { A11Y_BOOT_SCRIPT } from '@/lib/a11y-preferences';
-import { SiteHeader } from '@/components/site-header';
 import { routing } from '@/i18n/routing';
 import { ensureRoutingPublished, getEnabledLocales } from '@/lib/server/locales';
 import { brandingCss, getBranding, imageVersion } from '@/lib/server/branding';
@@ -59,9 +56,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   setRequestLocale(locale);
   await ensureRoutingPublished();
 
-  const t = await getTranslations('Common');
-  const site = await getSiteConfig();
-  const { branding: brand, features } = await getBranding();
+  const { branding: brand } = await getBranding();
   const theme = brandingCss(brand);
   const nonce = (await headers()).get('x-nonce') ?? undefined;
 
@@ -77,20 +72,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             {theme}
           </style>
         )}
-        <ClientMessages>
-          <a
-            href="#main"
-            className="btn btn-primary absolute start-2 top-2 z-50 -translate-y-24 focus:translate-y-0"
-          >
-            {t('skipToContent')}
-          </a>
-          <SiteHeader siteName={site.name} />
-          <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-            {children}
-          </main>
-          <SiteFooter siteName={site.name} optionalTrackersEnabled={site.optionalTrackersEnabled} />
-          {features.a11yWidget && <AccessibilityMenu />}
-        </ClientMessages>
+        <ClientMessages>{children}</ClientMessages>
       </body>
     </html>
   );

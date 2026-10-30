@@ -14,7 +14,8 @@ _Last updated: {{updated}}_
 {{#feedback}}| Ratings and comments you leave on answers | To improve the agents | Legitimate interest | As long as the chat is kept |
 {{/feedback}}{{#billing}}| Credit balance, purchases and refunds | To sell and account for credits | Contract and legal obligations (accounting) | As required by accounting law; kept without your name after account deletion |
 {{/billing}}{{#publicApi}}| API keys you create: name, permissions, creation and last use (the secret itself is stored only as a one-way hash) | Access to agents from your own systems | Contract | Until you revoke the key or delete your account |
-{{/publicApi}}| Security log: important account events with a one-way hash of the IP address | Security and accountability | Legitimate interest | As long as needed for security |
+{{/publicApi}}{{#widget}}| Chats in our widget on other websites: what visitors type and the answers | To provide the chat on behalf of the website that embeds it | That website's contract with us; we process on its behalf (to be confirmed) | Like other chats; the website owner can delete them |
+{{/widget}}| Security log: important account events with a one-way hash of the IP address | Security and accountability | Legitimate interest | As long as needed for security |
 
 We do not sell your data and we do not use it for advertising. {{^trackers}}This site does not use analytics or marketing cookies.{{/trackers}}
 

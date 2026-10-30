@@ -65,3 +65,29 @@ export async function getLocaleRouting(): Promise<LocaleRouting> {
   globalForRouting.rentagentRouting = { value, expires: Date.now() + TTL_MS };
   return value;
 }
+
+const ORIGINS_TTL_MS = 5_000;
+const globalForOrigins = globalThis as unknown as {
+  rentagentWidgetOrigins?: Map<string, { value: string[]; expires: number }>;
+};
+
+/** Sites allowed to embed a widget key (published to Redis by the app); [] when unknown. */
+export async function getWidgetOrigins(keyId: string): Promise<string[]> {
+  const cache = (globalForOrigins.rentagentWidgetOrigins ??= new Map());
+  const cached = cache.get(keyId);
+  if (cached && cached.expires > Date.now()) return cached.value;
+  let value: string[] = [];
+  try {
+    await getLocaleRouting(); // ensures the shared connection exists
+    const raw = await globalForRouting.rentagentRoutingRedis!.get(`widget:origins:${keyId}`);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    value = Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : [];
+  } catch {
+    // Unreachable Redis: the page cannot be framed (frame-ancestors 'none').
+  }
+  if (cache.size > 1000) cache.clear();
+  cache.set(keyId, { value, expires: Date.now() + ORIGINS_TTL_MS });
+  return value;
+}

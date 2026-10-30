@@ -80,7 +80,12 @@ export default async function AdminApiKeysPage({ params }: PageProps) {
                   <th scope="row" className="p-2 text-start font-normal" id={`admin-key-${key.id}`}>
                     <span dir="auto">{key.name}</span>{' '}
                     <span className="font-mono text-muted" dir="ltr">
-                      ra_sk_{key.keyId.slice(0, 8)}…
+                      {key.kind === 'PUBLISHABLE'
+                        ? `ra_pk_${key.keyId.slice(0, 8)}…`
+                        : `ra_sk_${key.keyId.slice(0, 8)}…`}
+                    </span>{' '}
+                    <span className="text-muted">
+                      ({key.kind === 'PUBLISHABLE' ? t('typeWidget') : t('typeSecret')})
                     </span>
                   </th>
                   <td className="p-2" dir="ltr">

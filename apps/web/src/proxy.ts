@@ -1,8 +1,8 @@
 import createMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
-import { getLocaleRouting, type LocaleRouting } from './lib/locale-routing';
-import { buildContentSecurityPolicy, generateNonce } from './lib/security-headers';
+import { getLocaleRouting, getWidgetOrigins, type LocaleRouting } from './lib/locale-routing';
+import { buildContentSecurityPolicy, EMBED_PATH, generateNonce } from './lib/security-headers';
 
 /** One next-intl handler per enabled-locales configuration (it rarely changes). */
 const handlers = new Map<string, ReturnType<typeof createMiddleware>>();
@@ -25,7 +25,12 @@ function handlerFor(config: LocaleRouting) {
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
   const nonce = generateNonce();
-  const csp = buildContentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
+  const embedKey = EMBED_PATH.exec(request.nextUrl.pathname)?.[1];
+  const csp = buildContentSecurityPolicy(
+    nonce,
+    process.env.NODE_ENV === 'development',
+    embedKey ? await getWidgetOrigins(embedKey) : [],
+  );
 
   // Next.js reads the nonce from the request CSP header and applies it to its own scripts.
   request.headers.set('x-nonce', nonce);

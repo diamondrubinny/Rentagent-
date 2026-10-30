@@ -25,10 +25,13 @@ export type ConversationResult =
 
 /** Where a conversation comes from; API calls may be limited to some agents. */
 export interface ConversationOrigin {
-  source: 'WEB' | 'API';
+  source: 'WEB' | 'API' | 'WIDGET';
   apiKeyId?: string;
   /** Empty or undefined = every published agent. */
   agentIds?: readonly string[];
+  /** Widget: the anonymous visitor and the key's daily run cap. */
+  visitorId?: string;
+  dailyRunLimit?: number;
 }
 
 const WEB: ConversationOrigin = { source: 'WEB' };
@@ -46,8 +49,33 @@ export function fieldErrorsOf(error: z.ZodError): Record<string, string> {
 const allowedAgent = (origin: ConversationOrigin, agentId: string) =>
   !origin.agentIds?.length || origin.agentIds.includes(agentId);
 
+/**
+ * Widget visitors do not use the owner's personal quota: each visitor has a burst
+ * limit and the key has a daily cap that protects the owner's credits.
+ */
+async function checkWidgetQuota(origin: ConversationOrigin): Promise<ConversationResult | null> {
+  const burst = await rateLimit(
+    redis(),
+    `widget-run:${origin.apiKeyId}:${origin.visitorId}`,
+    5,
+    60,
+  );
+  if (!burst.allowed) return { ok: false, error: 'rateLimited' };
+  const daily = await rateLimit(
+    redis(),
+    `widget-run-day:${origin.apiKeyId}`,
+    origin.dailyRunLimit ?? 0,
+    86_400,
+  );
+  return daily.allowed ? null : { ok: false, error: 'dailyLimit' };
+}
+
 /** Burst limit per minute and the operator's daily turn limit (UTC day). */
-async function checkRunQuota(userId: string): Promise<ConversationResult | null> {
+async function checkRunQuota(
+  userId: string,
+  origin: ConversationOrigin = WEB,
+): Promise<ConversationResult | null> {
+  if (origin.source === 'WIDGET') return checkWidgetQuota(origin);
   const burst = await rateLimit(redis(), `user-run:${userId}`, 10, 60);
   if (!burst.allowed) return { ok: false, error: 'rateLimited' };
   const { userDailyRunLimit } = await getSiteConfig();
@@ -71,7 +99,7 @@ export async function startConversationFor(
   const parsed = runInputSchema(agent.config.inputFields).safeParse(input);
   if (!parsed.success)
     return { ok: false, error: 'invalid', fieldErrors: fieldErrorsOf(parsed.error) };
-  const quota = await checkRunQuota(userId);
+  const quota = await checkRunQuota(userId, origin);
   if (quota) return quota;
 
   const runId = randomUUID();
@@ -85,6 +113,7 @@ export async function startConversationFor(
           title: conversationTitle(parsed.data, agent.name),
           source: origin.source,
           apiKeyId: origin.apiKeyId ?? null,
+          visitorId: origin.visitorId ?? null,
         },
       });
       const billing = await reserveCredits(tx, userId, agent.config, runId);
@@ -137,7 +166,12 @@ export async function sendMessageFor(
 
   // Ownership is part of the query.
   const conversation = await db().conversation.findFirst({
-    where: { id: conversationId, userId },
+    where: {
+      id: conversationId,
+      userId,
+      // A widget visitor only reaches the conversations they started with this key.
+      ...(origin.visitorId ? { apiKeyId: origin.apiKeyId, visitorId: origin.visitorId } : {}),
+    },
     select: { id: true, agentId: true },
   });
   if (!conversation || !allowedAgent(origin, conversation.agentId)) return notFound;
@@ -149,7 +183,7 @@ export async function sendMessageFor(
     where: { conversationId: conversation.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
   });
   if (hasActive > 0) return { ok: false, error: 'busy' };
-  const quota = await checkRunQuota(userId);
+  const quota = await checkRunQuota(userId, origin);
   if (quota) return quota;
 
   let runId: string | null;

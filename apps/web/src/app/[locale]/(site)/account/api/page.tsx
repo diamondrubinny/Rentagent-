@@ -6,7 +6,7 @@ import { getBranding } from '@/lib/server/branding';
 import { runnableAgents } from '@/lib/server/catalog';
 import { db } from '@/lib/server/runtime';
 import { requireUser } from '@/lib/server/session';
-import { CreateKeyForm, RevokeKeyButton } from './api-key-forms';
+import { CreateKeyForm, CreateWidgetForm, RevokeKeyButton, WidgetSnippet } from './api-key-forms';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -33,7 +33,8 @@ export default async function ApiKeysPage({ params }: PageProps) {
   const now = new Date();
   const date = (value: Date | null) =>
     value ? format.dateTime(value, { dateStyle: 'medium' }) : t('never');
-  const base = `${getServerEnv().APP_URL.replace(/\/$/, '')}/api/v1`;
+  const siteUrl = getServerEnv().APP_URL.replace(/\/$/, '');
+  const base = `${siteUrl}/api/v1`;
   const example = `curl ${base}/agents \\\n  -H "Authorization: Bearer ra_sk_…"`;
 
   return (
@@ -66,14 +67,31 @@ export default async function ApiKeysPage({ params }: PageProps) {
                   <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
                     <dt className="text-muted">{t('keyStart')}</dt>
                     <dd className="font-mono" dir="ltr">
-                      ra_sk_{key.keyId.slice(0, 8)}…
+                      {key.kind === 'PUBLISHABLE'
+                        ? `ra_pk_${key.keyId}`
+                        : `ra_sk_${key.keyId.slice(0, 8)}…`}
                     </dd>
+                    <dt className="text-muted">{t('type')}</dt>
+                    <dd>{key.kind === 'PUBLISHABLE' ? t('typeWidget') : t('typeSecret')}</dd>
                     <dt className="text-muted">{t('status')}</dt>
                     <dd>{status}</dd>
-                    <dt className="text-muted">{t('scopes')}</dt>
-                    <dd className="font-mono" dir="ltr">
-                      {key.scopes.join(', ')}
-                    </dd>
+                    {key.kind === 'PUBLISHABLE' ? (
+                      <>
+                        <dt className="text-muted">{t('widgetOrigins')}</dt>
+                        <dd className="font-mono" dir="ltr">
+                          {key.origins.join(', ')}
+                        </dd>
+                        <dt className="text-muted">{t('widgetDailyLimit')}</dt>
+                        <dd>{key.dailyRunLimit}</dd>
+                      </>
+                    ) : (
+                      <>
+                        <dt className="text-muted">{t('scopes')}</dt>
+                        <dd className="font-mono" dir="ltr">
+                          {key.scopes.join(', ')}
+                        </dd>
+                      </>
+                    )}
                     <dt className="text-muted">{t('agents')}</dt>
                     <dd>
                       {key.agentIds.length
@@ -87,6 +105,9 @@ export default async function ApiKeysPage({ params }: PageProps) {
                     <dt className="text-muted">{t('expires')}</dt>
                     <dd>{key.expiresAt ? date(key.expiresAt) : t('expiryNever')}</dd>
                   </dl>
+                  {!key.revokedAt && key.kind === 'PUBLISHABLE' && (
+                    <WidgetSnippet token={`ra_pk_${key.keyId}`} siteUrl={siteUrl} locale={locale} />
+                  )}
                   {!key.revokedAt && <RevokeKeyButton id={key.id} describedBy={`key-${key.id}`} />}
                 </li>
               );
@@ -101,6 +122,20 @@ export default async function ApiKeysPage({ params }: PageProps) {
         </h2>
         <CreateKeyForm agents={agents.map((agent) => ({ id: agent.id, name: agent.name }))} />
       </section>
+
+      {agents.length > 0 && (
+        <section aria-labelledby="create-widget-title" className="space-y-4">
+          <h2 id="create-widget-title" className="text-xl font-bold">
+            {t('widgetTitle')}
+          </h2>
+          <p>{t('widgetIntro')}</p>
+          <CreateWidgetForm
+            agents={agents.map((agent) => ({ id: agent.id, name: agent.name }))}
+            siteUrl={siteUrl}
+            locale={locale}
+          />
+        </section>
+      )}
 
       <section aria-labelledby="api-docs-title" className="space-y-3">
         <h2 id="api-docs-title" className="text-xl font-bold">

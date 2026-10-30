@@ -143,7 +143,8 @@
     "schemaObject": "הסכמה חייבת להיות JSON Schema עם ‎\"type\": \"object\"‎.",
     "invalidHeaders": "השתמשו בשורה אחת ‎\"Header-Name: value\"‎ לכל כותרת.",
     "invalidPhone": "יש להשתמש רק בספרות, רווחים ו־+ ( ) -.",
-    "invalidLicense": "מפתח הרישיון הזה לא תקף לתוכנה הזו."
+    "invalidLicense": "מפתח הרישיון הזה לא תקף לתוכנה הזו.",
+    "invalidOrigins": "הזינו עד 10 כתובות אתרים בפורמט https://www.example.com."
   },
   "Errors": {
     "notFoundTitle": "הדף לא נמצא",
@@ -1707,6 +1708,31 @@
     "adminEmpty": "אין מפתחות API פעילים.",
     "owner": "בעלים",
     "conversations30": "שיחות (30 יום)",
-    "actions": "פעולות"
+    "actions": "פעולות",
+    "type": "סוג",
+    "typeSecret": "מפתח שרת",
+    "typeWidget": "Widget לאתר",
+    "widgetTitle": "Widget לאתר",
+    "widgetIntro": "הוסיפו לאתר שלכם צ'אט עם סוכן אחד. מפתח ה־Widget גלוי בקוד הדף, ולכן הוא עובד רק באתרים שתציינו ויש לו מגבלת הרצות יומית, שמחויבת בחשבון שלכם.",
+    "widgetCreated": "ה־Widget מוכן. הדביקו את הקוד הזה ממש לפני תגית ה־body הסוגרת באתר.",
+    "widgetAgent": "סוכן",
+    "widgetOrigins": "אתרים מורשים",
+    "widgetOriginsHint": "כתובת אחת בכל שורה, למשל https://www.example.com (‏https בלבד).",
+    "widgetDailyLimit": "מגבלת הרצות יומית",
+    "widgetDailyLimitHint": "מגנה על הקרדיטים שלכם: ה־Widget נעצר להיום אחרי מספר ההרצות הזה.",
+    "widgetCreate": "יצירת Widget",
+    "widgetSnippet": "הקוד לאתר שלכם",
+    "widgetDefaultLabel": "צ'אט איתנו"
+  },
+  "Widget": {
+    "close": "סגירת הצ'אט",
+    "verifying": "מכינים צ'אט מאובטח…",
+    "verifyFailed": "לא ניתן היה להתחיל את הצ'אט. בדקו את החיבור ונסו שוב.",
+    "retry": "נסו שוב",
+    "start": "התחלה",
+    "newChat": "צ'אט חדש",
+    "waitingOwner": "הפעולה הזו דורשת אישור של בעל האתר. התשובה תופיע כאן אחרי שיחליט.",
+    "disclaimer": "התשובות נוצרות ב־AI ועלולות לכלול טעויות. אל תשתפו מידע אישי רגיש.",
+    "error": "משהו השתבש. נסו שוב."
   }
 }

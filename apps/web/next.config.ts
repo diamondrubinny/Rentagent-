@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
-import { STATIC_SECURITY_HEADERS } from './src/lib/security-headers';
+import { FRAME_DENY_HEADER, STATIC_SECURITY_HEADERS } from './src/lib/security-headers';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -25,7 +25,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {
-    return [{ source: '/:path*', headers: STATIC_SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: STATIC_SECURITY_HEADERS },
+      // The widget page may be framed by the sites its key allows (CSP frame-ancestors).
+      { source: '/:path((?!(?:[A-Za-z0-9-]+/)?embed/).*)', headers: [FRAME_DENY_HEADER] },
+    ];
   },
 };
 

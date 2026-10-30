@@ -14,6 +14,8 @@ compliant with any law or standard by itself.
 - [ ] Billing (if enabled): a test payment, a refund and (if used) a subscription renewal are
       reflected correctly in the user's balance and in Admin › Billing.
 - [ ] Webhooks (if used): your receiver verifies the signature and handles retries.
+- [ ] Website widget (if used): it opens on an allowed site and is refused on another; the daily
+      limit fits your credits; a visitor cannot see another visitor's chat.
 - [ ] Public API (if enabled): a test key works end to end; another user's key gets 404 for your
       conversations; a revoked key gets 401; the terms of use mention API use (generated when on).
 - [ ] Error, 404 and empty states look right in every enabled language.
@@ -106,6 +108,7 @@ privacy email and are handled manually.
 | `ra.two_factor` | This site | Cookie | Essential | Two-factor step | Minutes | Not required |
 | `ra_locale` | This site | Cookie | Essential (preference) | Language | 1 year | Not required |
 | `ra_consent` | This site | Cookie | Essential | Cookie choices | 6 months | Not required |
+| `ra_widget_…` | This site (inside the widget iframe) | sessionStorage | Essential | Keeps a widget chat for the tab | Until the tab closes | Not required |
 | `ra_a11y` | This site | localStorage | Functional (stays on the device) | Accessibility preferences | Until reset | Not required (set only by the user's action) |
 | Stripe / PayPal checkout cookies | Stripe / PayPal | Third-party cookies on their pages | Essential for payment | Fraud prevention | Provider's policy | Provider's notice |
 

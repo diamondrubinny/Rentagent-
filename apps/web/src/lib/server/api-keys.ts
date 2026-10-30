@@ -46,6 +46,8 @@ export interface ApiCaller {
   locale: string;
   scopes: string[];
   agentIds: string[];
+  /** Widget sessions: limits every read to this visitor's conversations. */
+  visitorId?: string;
 }
 
 /**
@@ -75,6 +77,7 @@ export async function authenticateApi(
   const now = new Date();
   if (
     !key ||
+    key.kind !== 'SECRET' ||
     !safeEqual(key.secretHash, sha256Hex(match[0])) ||
     key.revokedAt ||
     (key.expiresAt && key.expiresAt <= now) ||

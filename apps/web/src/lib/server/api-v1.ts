@@ -55,7 +55,8 @@ const runInclude = {
 type RunRow = Awaited<ReturnType<typeof loadRun>> & object;
 
 /** One turn as the API shows it: no model/provider names or internal costs. */
-export function runDto(run: NonNullable<RunRow>) {
+/** `visitor`: a widget visitor's view, without what the site owner is charged. */
+export function runDto(run: NonNullable<RunRow>, { visitor = false }: { visitor?: boolean } = {}) {
   return {
     id: run.id,
     conversationId: run.conversationId,
@@ -71,7 +72,7 @@ export function runDto(run: NonNullable<RunRow>) {
       input: approval.input,
       status: approval.status,
     })),
-    chargedMinor: run.chargedMinor.toString(),
+    ...(visitor ? {} : { chargedMinor: run.chargedMinor.toString() }),
     createdAt: run.createdAt,
     finishedAt: run.finishedAt,
   };
@@ -85,6 +86,9 @@ export async function loadRun(caller: ApiCaller, runId: string) {
       userId: caller.userId,
       mode: 'LIVE',
       ...(caller.agentIds.length ? { agentId: { in: caller.agentIds } } : {}),
+      ...(caller.visitorId
+        ? { conversation: { apiKeyId: caller.apiKeyId, visitorId: caller.visitorId } }
+        : {}),
     },
     include: runInclude,
   });
@@ -96,6 +100,7 @@ export async function loadConversation(caller: ApiCaller, conversationId: string
       id: conversationId,
       userId: caller.userId,
       ...(caller.agentIds.length ? { agentId: { in: caller.agentIds } } : {}),
+      ...(caller.visitorId ? { apiKeyId: caller.apiKeyId, visitorId: caller.visitorId } : {}),
     },
     include: {
       agent: { select: { id: true, slug: true, name: true } },
@@ -110,6 +115,6 @@ export async function loadConversation(caller: ApiCaller, conversationId: string
     agent: conversation.agent,
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt,
-    turns: conversation.runs.map(runDto),
+    turns: conversation.runs.map((run) => runDto(run, { visitor: Boolean(caller.visitorId) })),
   };
 }

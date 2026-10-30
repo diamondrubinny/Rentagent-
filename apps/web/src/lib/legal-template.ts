@@ -28,6 +28,7 @@ export const TEMPLATE_FACTS = [
   'semanticSearch',
   'feedback',
   'publicApi',
+  'widget',
   'smtp',
   'trackers',
 ] as const;

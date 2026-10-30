@@ -13,7 +13,8 @@ _Last updated: {{updated}}_
 | `ra.two_factor` | Completes the two-factor sign-in step | A few minutes |
 | `ra_locale` | Remembers your language | 1 year |
 | `ra_consent` | Remembers your cookie choices | 6 months |
-| `ra_a11y` (browser storage, not a cookie) | Remembers reading aids you chose in the accessibility menu; stays on your device | Until you reset it |
+{{#widget}}| `ra_widget_…` (browser storage inside the chat widget, not a cookie) | Keeps a widget chat open while the tab is open; nothing is stored on the website that embeds it | Until the tab is closed |
+{{/widget}}| `ra_a11y` (browser storage, not a cookie) | Remembers reading aids you chose in the accessibility menu; stays on your device | Until you reset it |
 
 {{#stripe}}When you pay, Stripe's own payment page may set its own cookies for fraud prevention; see Stripe's privacy policy.
 {{/stripe}}{{#paypal}}When you pay with PayPal, PayPal's page may set its own cookies; see PayPal's privacy policy.
