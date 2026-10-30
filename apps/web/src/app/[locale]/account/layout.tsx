@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ClientMessages } from '@/components/client-messages';
 import { Link } from '@/i18n/navigation';
 import { getBillingConfig } from '@/lib/server/billing';
+import { getBranding } from '@/lib/server/branding';
 import { requireUser } from '@/lib/server/session';
 
 interface AccountLayoutProps {
@@ -15,6 +16,7 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
   await requireUser(locale, '/account');
   const t = await getTranslations('Account');
   const billingEnabled = (await getBillingConfig()).settings.enabled;
+  const apiEnabled = (await getBranding()).features.publicApi;
   return (
     <div className="grid gap-8 md:grid-cols-[12rem_1fr]">
       <nav aria-label={t('nav')}>
@@ -36,6 +38,13 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
               </Link>
             </li>
           )}
+          {apiEnabled && (
+            <li>
+              <Link className="link" href="/account/api">
+                {t('apiKeys')}
+              </Link>
+            </li>
+          )}
           <li>
             <Link className="link" href="/account/privacy">
               {t('privacy')}
@@ -44,7 +53,7 @@ export default async function AccountLayout({ children, params }: AccountLayoutP
         </ul>
       </nav>
       <div>
-        <ClientMessages namespaces={['Account', 'AuthErrors', 'Billing', 'Privacy']}>
+        <ClientMessages namespaces={['Account', 'ApiKeys', 'AuthErrors', 'Billing', 'Privacy']}>
           {children}
         </ClientMessages>
       </div>

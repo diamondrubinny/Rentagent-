@@ -13,7 +13,8 @@ _Last updated: {{updated}}_
 | Your tasks and chats: what you enter, the agents' answers, actions you approve or reject | To carry out the tasks you ask for and show your history | Contract | {{#retention}}Deleted automatically {{retentionDays}} days after your last activity in a chat, or earlier when you delete it{{/retention}}{{^retention}}Until you delete them{{/retention}} |
 {{#feedback}}| Ratings and comments you leave on answers | To improve the agents | Legitimate interest | As long as the chat is kept |
 {{/feedback}}{{#billing}}| Credit balance, purchases and refunds | To sell and account for credits | Contract and legal obligations (accounting) | As required by accounting law; kept without your name after account deletion |
-{{/billing}}| Security log: important account events with a one-way hash of the IP address | Security and accountability | Legitimate interest | As long as needed for security |
+{{/billing}}{{#publicApi}}| API keys you create: name, permissions, creation and last use (the secret itself is stored only as a one-way hash) | Access to agents from your own systems | Contract | Until you revoke the key or delete your account |
+{{/publicApi}}| Security log: important account events with a one-way hash of the IP address | Security and accountability | Legitimate interest | As long as needed for security |
 
 We do not sell your data and we do not use it for advertising. {{^trackers}}This site does not use analytics or marketing cookies.{{/trackers}}
 

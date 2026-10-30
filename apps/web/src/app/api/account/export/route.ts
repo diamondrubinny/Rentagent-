@@ -18,7 +18,7 @@ export async function GET() {
   const limit = await rateLimit(redis(), `export:${user.id}`, 5, 60 * 60);
   if (!limit.allowed) return jsonResponse(429, { error: 'rate_limited' });
 
-  const [profile, sessions, conversations, usage, events] = await Promise.all([
+  const [profile, sessions, conversations, usage, events, apiKeys] = await Promise.all([
     db().user.findUniqueOrThrow({
       where: { id: user.id },
       select: {
@@ -43,6 +43,7 @@ export async function GET() {
       select: {
         id: true,
         title: true,
+        source: true,
         createdAt: true,
         updatedAt: true,
         agent: { select: { name: true, slug: true } },
@@ -72,6 +73,19 @@ export async function GET() {
       orderBy: { createdAt: 'asc' },
       select: { action: true, createdAt: true },
     }),
+    // Key metadata only: the secret is never stored and its hash is not exported.
+    db().apiKey.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        name: true,
+        scopes: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        revokedAt: true,
+      },
+    }),
   ]);
   await audit('privacy.data_exported', { actorId: user.id });
 
@@ -84,6 +98,7 @@ export async function GET() {
       sessions,
       conversations,
       usage,
+      apiKeys,
       securityEvents: events,
     },
     null,

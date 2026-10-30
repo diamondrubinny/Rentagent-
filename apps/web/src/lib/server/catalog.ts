@@ -185,3 +185,26 @@ export async function runnableAgent(
     config: parsed.data,
   };
 }
+
+/** Published agents with their configuration in one batch (API listing); optionally limited. */
+export async function runnableAgents(
+  locale: string,
+  ids?: readonly string[],
+): Promise<RunnableAgent[]> {
+  const agents = await db().agent.findMany({
+    where: { ...publishedWhere, ...(ids?.length ? { id: { in: [...ids] } } : {}) },
+    select: { ...select, publishedVersionId: true },
+    orderBy: [{ featured: 'desc' }, { name: 'asc' }],
+    take: 200,
+  });
+  const versions = await db().agentVersion.findMany({
+    where: { id: { in: agents.map((agent) => agent.publishedVersionId!) } },
+  });
+  const byId = new Map(versions.map((version) => [version.id, version]));
+  return agents.flatMap((agent) => {
+    const version = byId.get(agent.publishedVersionId!);
+    const parsed = agentConfigSchema.safeParse(version?.config);
+    if (!version || !parsed.success) return [];
+    return [{ ...toCatalogAgent(agent, locale), versionId: version.id, config: parsed.data }];
+  });
+}

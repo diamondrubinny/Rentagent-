@@ -6,7 +6,7 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
 
 - Product plan and roadmap: [`PLAN.md`](PLAN.md) (Hebrew)
 - Server requirements for customers: [`deploy/REQUIREMENTS.md`](deploy/REQUIREMENTS.md)
-- Operator guide: [`docs/OPERATOR.md`](docs/OPERATOR.md) · Production checklist: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · Licensing (vendor): [`docs/LICENSING.md`](docs/LICENSING.md)
+- Public API: [`docs/API.md`](docs/API.md) · Operator guide: [`docs/OPERATOR.md`](docs/OPERATOR.md) · Production checklist: [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) · Licensing (vendor): [`docs/LICENSING.md`](docs/LICENSING.md)
 - Phase notes: [`docs/phase-1.md`](docs/phase-1.md), [`docs/phase-2.md`](docs/phase-2.md), [`docs/phase-3.md`](docs/phase-3.md), [`docs/phase-4.md`](docs/phase-4.md), [`docs/phase-5.md`](docs/phase-5.md), [`docs/phase-5-5.md`](docs/phase-5-5.md), [`docs/phase-6.md`](docs/phase-6.md), [`docs/phase-7.md`](docs/phase-7.md)
 
 ## Status
@@ -38,6 +38,8 @@ OpenAI-compatible endpoint, local models…), build and manage agents, and let t
   daily online check, white-label gating and a vendor license server + CLI; SMTP settings after
   setup; retention of operational records; operator guide, production checklist, load test, SBOM
   and dependency license policy in CI.
+- V2.1a (public API): user API keys with scopes, agent restrictions and expiry; REST API with
+  streaming, approvals and OpenAPI 3.1; staff overview and revocation.
 
 ## Repository layout
 

@@ -14,6 +14,8 @@ compliant with any law or standard by itself.
 - [ ] Billing (if enabled): a test payment, a refund and (if used) a subscription renewal are
       reflected correctly in the user's balance and in Admin › Billing.
 - [ ] Webhooks (if used): your receiver verifies the signature and handles retries.
+- [ ] Public API (if enabled): a test key works end to end; another user's key gets 404 for your
+      conversations; a revoked key gets 401; the terms of use mention API use (generated when on).
 - [ ] Error, 404 and empty states look right in every enabled language.
 
 ## 2. Roles, authentication and sessions
@@ -76,6 +78,7 @@ in your records of processing.
 | Knowledge files and their text chunks/embeddings (uploaded by staff) | Agent knowledge | Legitimate interest / contract | `files`, `chunks`, files volume | Until deleted by staff | AI provider for embeddings; ClamAV (local) |
 | AI usage: tokens, cost, model, user link | Cost control, billing | Legitimate interest | `ai_usage_records` | User link removed after 395 days; totals kept | — |
 | Credits: balance, ledger, payments, subscriptions | Billing, accounting | Contract; legal obligation | `wallets`, `ledger_entries`, `payments`, `subscriptions` | ⚖ accounting law (ledger/payments keep an opaque user id after account deletion) | Stripe / PayPal |
+| API keys (if the public API is on): name, scopes, agent list, dates; secret stored only as SHA-256 hash | API access | Contract | Until revoked or account deletion | — |
 | Audit log: actor id, action, one-way IP hash | Security, accountability | Legitimate interest | `audit_logs` | 365 days | — |
 | Consent records: random id, choices, policy version | Proof of cookie consent | Legal obligation | `consent_records` | 395 days | — |
 | Webhook deliveries: event payloads (no chat content), response codes | Integrations | Legitimate interest | `webhook_deliveries` | 30 days | Your webhook receivers |

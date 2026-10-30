@@ -69,6 +69,8 @@ export interface SettingValues {
     semanticSearch: boolean;
     /** Floating reading-aids menu (text size, contrast, …). */
     a11yWidget: boolean;
+    /** Users may create API keys and use agents through the public API. */
+    publicApi: boolean;
   };
   /** Operator details and document state for the legal pages. */
   legal: {

@@ -225,12 +225,14 @@ export function FeaturesForm({
   feedback,
   semanticSearch,
   a11yWidget,
+  publicApi,
   hidePoweredBy,
   whiteLabel,
 }: {
   feedback: boolean;
   semanticSearch: boolean;
   a11yWidget: boolean;
+  publicApi: boolean;
   hidePoweredBy: boolean;
   /** The license allows removing the credit line. */
   whiteLabel: boolean;
@@ -248,6 +250,7 @@ export function FeaturesForm({
             feedback: form.get('feedback') === 'on',
             semanticSearch: form.get('semanticSearch') === 'on',
             a11yWidget: form.get('a11yWidget') === 'on',
+            publicApi: form.get('publicApi') === 'on',
             hidePoweredBy: form.get('hidePoweredBy') === 'on',
           }),
         );
@@ -257,23 +260,27 @@ export function FeaturesForm({
       {result && !result.ok && (
         <FormMessage tone="error">{t(`errors.${result.error}`)}</FormMessage>
       )}
-      {(['feedback', 'semanticSearch', 'a11yWidget', 'hidePoweredBy'] as const).map((name) => (
-        <label key={name} className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            name={name}
-            defaultChecked={{ feedback, semanticSearch, a11yWidget, hidePoweredBy }[name]}
-            className="mt-1 size-5"
-          />
-          <span>
-            <span className="block font-semibold">{t(`feature_${name}`)}</span>
-            <span className="block text-sm text-muted">{t(`feature_${name}Hint`)}</span>
-            {name === 'hidePoweredBy' && !whiteLabel && (
-              <span className="block text-sm font-semibold">{t('needsWhiteLabel')}</span>
-            )}
-          </span>
-        </label>
-      ))}
+      {(['feedback', 'semanticSearch', 'a11yWidget', 'publicApi', 'hidePoweredBy'] as const).map(
+        (name) => (
+          <label key={name} className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name={name}
+              defaultChecked={
+                { feedback, semanticSearch, a11yWidget, publicApi, hidePoweredBy }[name]
+              }
+              className="mt-1 size-5"
+            />
+            <span>
+              <span className="block font-semibold">{t(`feature_${name}`)}</span>
+              <span className="block text-sm text-muted">{t(`feature_${name}Hint`)}</span>
+              {name === 'hidePoweredBy' && !whiteLabel && (
+                <span className="block text-sm font-semibold">{t('needsWhiteLabel')}</span>
+              )}
+            </span>
+          </label>
+        ),
+      )}
       <SubmitButton pending={pending} pendingLabel={t('saving')}>
         {t('save')}
       </SubmitButton>

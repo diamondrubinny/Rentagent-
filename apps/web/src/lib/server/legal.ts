@@ -94,6 +94,7 @@ async function installationFacts(locale: string): Promise<TemplateFacts> {
     knowledge: Boolean(embedding),
     semanticSearch: Boolean(embedding) && branding.features.semanticSearch,
     feedback: branding.features.feedback,
+    publicApi: branding.features.publicApi,
     smtp: site.smtpEnabled,
     trackers: site.optionalTrackersEnabled,
   };

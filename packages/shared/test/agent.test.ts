@@ -97,6 +97,13 @@ describe('runInputSchema', () => {
     const paths = result.error?.issues.map((issue) => issue.path.join('.'));
     expect(paths).toEqual(expect.arrayContaining(['task', 'site', 'tone']));
   });
+
+  it('reports omitted required fields as "required" (API clients may leave them out)', () => {
+    const result = schema.safeParse({ tone: 'formal' });
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({ path: ['task'], message: 'required' }),
+    ]);
+  });
 });
 
 describe('foldForSearch', () => {

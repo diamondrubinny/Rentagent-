@@ -18,6 +18,8 @@ export const DEFAULT_FEATURES: Features = {
   feedback: true,
   semanticSearch: true,
   a11yWidget: true,
+  // Off until the operator decides to offer API access.
+  publicApi: false,
 };
 
 export const getBranding = cache(async () => {

@@ -260,11 +260,15 @@ export function runInputSchema(fields: AgentInputField[]) {
       shape[field.key] =
         field.type === 'number' || field.type === 'select'
           ? schema
-          : z
-              .string()
-              .trim()
-              .min(1, { error: 'required' })
-              .pipe(schema as z.ZodType<string, string>);
+          : // A missing value (API clients may omit fields) reads as empty, so it reports "required".
+            z.preprocess(
+              (value) => value ?? '',
+              z
+                .string()
+                .trim()
+                .min(1, { error: 'required' })
+                .pipe(schema as z.ZodType<string, string>),
+            );
     } else {
       shape[field.key] = z.preprocess(
         (value) => (value === '' ? undefined : value),

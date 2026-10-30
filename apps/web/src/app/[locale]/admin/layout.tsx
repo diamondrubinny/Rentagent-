@@ -17,6 +17,7 @@ const ADMIN_NAMESPACES = [
   'AdminLicense',
   'AdminTools',
   'AdminWebhooks',
+  'ApiKeys',
   'Setup',
 ];
 
@@ -38,6 +39,7 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
   const tWebhooks = await getTranslations('AdminWebhooks');
   const tLegal = await getTranslations('AdminLegal');
   const tLicense = await getTranslations('AdminLicense');
+  const tApiKeys = await getTranslations('ApiKeys');
   const license = await getLicenseState();
   const licenseProblem =
     license.status !== 'valid' && license.status !== 'none'
@@ -63,6 +65,11 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
       href: '/admin/branding',
       label: tBranding('title'),
       show: can(user.role, 'settings.manage'),
+    },
+    {
+      href: '/admin/api-keys',
+      label: tApiKeys('adminTitle'),
+      show: can(user.role, 'users.manage'),
     },
     {
       href: '/admin/webhooks',

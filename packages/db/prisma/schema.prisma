@@ -124,15 +124,16 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  sessions   Session[]
-  accounts   Account[]
-  twoFactors TwoFactor[]
-  usage      UsageRecord[]
+  sessions      Session[]
+  accounts      Account[]
+  twoFactors    TwoFactor[]
+  usage         UsageRecord[]
   runs          Run[]
   files         File[]
   conversations Conversation[]
   wallet        Wallet?
   subscriptions Subscription[]
+  apiKeys       ApiKey[]
 
   @@index([role])
   @@index([createdAt])
@@ -279,25 +280,25 @@ enum ModelKind {
 /// Model registry entry. Costs are what the provider charges (USD per 1M tokens);
 /// prices are what end users are charged (installation base currency per 1M tokens).
 model AiModel {
-  id              String    @id @default(uuid()) @db.Uuid
-  providerId      String    @map("provider_id") @db.Uuid
-  modelId         String    @map("model_id") @db.VarChar(200)
-  displayName     String    @map("display_name") @db.VarChar(120)
-  kind            ModelKind @default(CHAT)
+  id            String    @id @default(uuid()) @db.Uuid
+  providerId    String    @map("provider_id") @db.Uuid
+  modelId       String    @map("model_id") @db.VarChar(200)
+  displayName   String    @map("display_name") @db.VarChar(120)
+  kind          ModelKind @default(CHAT)
   /// { tools, vision, json, reasoning } booleans
-  capabilities    Json      @default("{}")
-  contextWindow   Int?      @map("context_window")
+  capabilities  Json      @default("{}")
+  contextWindow Int?      @map("context_window")
   /// BCP 47 language codes the operator verified; empty = not specified.
-  languages       String[]  @default([])
-  costInPer1M     Decimal?  @map("cost_in_per_1m") @db.Decimal(14, 6)
-  costOutPer1M    Decimal?  @map("cost_out_per_1m") @db.Decimal(14, 6)
-  priceInPer1M    Decimal?  @map("price_in_per_1m") @db.Decimal(14, 6)
-  priceOutPer1M   Decimal?  @map("price_out_per_1m") @db.Decimal(14, 6)
+  languages     String[]  @default([])
+  costInPer1M   Decimal?  @map("cost_in_per_1m") @db.Decimal(14, 6)
+  costOutPer1M  Decimal?  @map("cost_out_per_1m") @db.Decimal(14, 6)
+  priceInPer1M  Decimal?  @map("price_in_per_1m") @db.Decimal(14, 6)
+  priceOutPer1M Decimal?  @map("price_out_per_1m") @db.Decimal(14, 6)
   /// Visible to end users (agents may still use hidden models).
-  visible         Boolean   @default(false)
-  enabled         Boolean   @default(true)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  visible       Boolean   @default(false)
+  enabled       Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
   usage    UsageRecord[]
@@ -375,27 +376,27 @@ enum AgentStatus {
 }
 
 model Agent {
-  id                 String      @id @default(uuid()) @db.Uuid
-  slug               String      @unique @db.VarChar(80)
-  name               String      @db.VarChar(120)
-  category           String      @db.VarChar(40)
-  description        String      @default("") @db.VarChar(2000)
+  id                 String                 @id @default(uuid()) @db.Uuid
+  slug               String                 @unique @db.VarChar(80)
+  name               String                 @db.VarChar(120)
+  category           String                 @db.VarChar(40)
+  description        String                 @default("") @db.VarChar(2000)
   /// { "<locale>": { "name": "...", "description": "..." } }
-  localizations      Json        @default("{}")
-  status             AgentStatus @default(DRAFT)
+  localizations      Json                   @default("{}")
+  status             AgentStatus            @default(DRAFT)
   /// Editable configuration (validated AgentConfig JSON); published versions are immutable copies.
   draft              Json
-  publishedVersionId String?     @map("published_version_id") @db.Uuid
-  templateKey        String?     @map("template_key") @db.VarChar(60)
+  publishedVersionId String?                @map("published_version_id") @db.Uuid
+  templateKey        String?                @map("template_key") @db.VarChar(60)
   /// Shown first in the catalog and on the home page.
-  featured           Boolean     @default(false)
+  featured           Boolean                @default(false)
   /// Folded name/description in every language (see foldForSearch).
-  searchText         String      @default("") @map("search_text")
+  searchText         String                 @default("") @map("search_text")
   /// Semantic search vector (embedding model set by the operator); dimension varies by model.
   embedding          Unsupported("vector")?
-  createdById        String?     @map("created_by_id") @db.VarChar(64)
-  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById        String?                @map("created_by_id") @db.VarChar(64)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   versions      AgentVersion[]
   runs          Run[]
@@ -442,18 +443,18 @@ model HttpTool {
 }
 
 model McpServer {
-  id                  String    @id @default(uuid()) @db.Uuid
-  name                String    @db.VarChar(80)
+  id                 String    @id @default(uuid()) @db.Uuid
+  name               String    @db.VarChar(80)
   /// Prefix for tool names exposed to models.
-  slug                String    @unique @db.VarChar(32)
-  url                 String    @db.VarChar(500)
+  slug               String    @unique @db.VarChar(32)
+  url                String    @db.VarChar(500)
   /// Encrypted Authorization header value, bound to "mcp-server:<id>".
-  authEncrypted       String?   @map("auth_encrypted")
-  enabled             Boolean   @default(true)
+  authEncrypted      String?   @map("auth_encrypted")
+  enabled            Boolean   @default(true)
   /// Last discovered tool list: [{ name, description, inputSchema }]
-  toolCache           Json      @default("[]") @map("tool_cache")
-  toolCacheUpdatedAt  DateTime? @map("tool_cache_updated_at") @db.Timestamptz(3)
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  toolCache          Json      @default("[]") @map("tool_cache")
+  toolCacheUpdatedAt DateTime? @map("tool_cache_updated_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("mcp_servers")
 }
@@ -475,45 +476,45 @@ enum RunStatus {
 }
 
 model Run {
-  id             String    @id @default(uuid()) @db.Uuid
-  agentId        String    @map("agent_id") @db.Uuid
-  agentVersionId String?   @map("agent_version_id") @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
+  agentId          String    @map("agent_id") @db.Uuid
+  agentVersionId   String?   @map("agent_version_id") @db.Uuid
   /// Exact configuration used (draft previews have no version).
-  config         Json
-  userId         String?   @map("user_id") @db.VarChar(64)
-  conversationId String?   @map("conversation_id") @db.Uuid
+  config           Json
+  userId           String?   @map("user_id") @db.VarChar(64)
+  conversationId   String?   @map("conversation_id") @db.Uuid
   /// Follow-up text typed by the user (the first turn uses the task form `input`).
-  userMessage    String?   @map("user_message")
+  userMessage      String?   @map("user_message")
   /// End-user feedback: 1 = helpful, -1 = not helpful.
-  rating         Int?      @db.SmallInt
-  feedback       String?   @db.VarChar(1000)
-  mode           RunMode   @default(PREVIEW)
-  status         RunStatus @default(QUEUED)
-  locale         String    @db.VarChar(35)
-  input          Json
+  rating           Int?      @db.SmallInt
+  feedback         String?   @db.VarChar(1000)
+  mode             RunMode   @default(PREVIEW)
+  status           RunStatus @default(QUEUED)
+  locale           String    @db.VarChar(35)
+  input            Json
   /// Conversation state (model messages) so a run can resume after approval or restart.
-  messages       Json      @default("[]")
-  output         String?
-  errorKind      String?   @map("error_kind") @db.VarChar(40)
-  stepCount      Int       @default(0) @map("step_count")
-  inputTokens    Int       @default(0) @map("input_tokens")
-  outputTokens   Int       @default(0) @map("output_tokens")
-  costMicros     BigInt    @default(0) @map("cost_micros")
-  priceMicros    BigInt    @default(0) @map("price_micros")
-  cancelRequested Boolean  @default(false) @map("cancel_requested")
+  messages         Json      @default("[]")
+  output           String?
+  errorKind        String?   @map("error_kind") @db.VarChar(40)
+  stepCount        Int       @default(0) @map("step_count")
+  inputTokens      Int       @default(0) @map("input_tokens")
+  outputTokens     Int       @default(0) @map("output_tokens")
+  costMicros       BigInt    @default(0) @map("cost_micros")
+  priceMicros      BigInt    @default(0) @map("price_micros")
+  cancelRequested  Boolean   @default(false) @map("cancel_requested")
   /// Credits reserved for this run (minor units of the wallet currency); 0 = not billed.
-  holdMinor      BigInt    @default(0) @map("hold_minor")
+  holdMinor        BigInt    @default(0) @map("hold_minor")
   /// The run stops when its price reaches this many micro-units (usage pricing).
-  priceLimitMicros BigInt? @map("price_limit_micros")
-  chargedMinor   BigInt    @default(0) @map("charged_minor")
+  priceLimitMicros BigInt?   @map("price_limit_micros")
+  chargedMinor     BigInt    @default(0) @map("charged_minor")
   /// Set once the hold was captured/released (idempotent settlement).
-  settledAt      DateTime? @map("settled_at") @db.Timestamptz(3)
-  startedAt      DateTime? @map("started_at") @db.Timestamptz(3)
-  finishedAt     DateTime? @map("finished_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  settledAt        DateTime? @map("settled_at") @db.Timestamptz(3)
+  startedAt        DateTime? @map("started_at") @db.Timestamptz(3)
+  finishedAt       DateTime? @map("finished_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  agent     Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  version   AgentVersion? @relation(fields: [agentVersionId], references: [id], onDelete: SetNull)
+  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  version      AgentVersion? @relation(fields: [agentVersionId], references: [id], onDelete: SetNull)
   user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   steps        RunStep[]
@@ -536,16 +537,21 @@ enum RunStepType {
 
 /// An end-user chat with one agent; every turn is a LIVE run.
 model Conversation {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.VarChar(64)
-  agentId   String   @map("agent_id") @db.Uuid
-  title     String   @db.VarChar(200)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id        String             @id @default(uuid()) @db.Uuid
+  userId    String             @map("user_id") @db.VarChar(64)
+  agentId   String             @map("agent_id") @db.Uuid
+  title     String             @db.VarChar(200)
+  /// Where the conversation was started (web app or public API).
+  source    ConversationSource @default(WEB)
+  /// The API key that started it (kept for usage reporting; cleared when the key is deleted).
+  apiKeyId  String?            @map("api_key_id") @db.Uuid
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  runs  Run[]
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent  Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  runs   Run[]
 
   @@index([userId, updatedAt])
   @@index([updatedAt])
@@ -841,4 +847,36 @@ model Subscription {
   @@unique([gateway, gatewayRef])
   @@index([userId, status])
   @@map("subscriptions")
+}
+
+// ---------------------------------------------------------------- Public API (V2.1)
+
+enum ConversationSource {
+  WEB
+  API
+}
+
+/// A user's key for the public API. Only a SHA-256 hash of the secret part is stored;
+/// the full key (ra_sk_<keyId>_<secret>) is shown once at creation.
+model ApiKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.VarChar(64)
+  name       String    @db.VarChar(80)
+  /// Public identifier inside the key, used for lookup.
+  keyId      String    @unique @map("key_id") @db.VarChar(32)
+  secretHash String    @map("secret_hash") @db.Char(64)
+  /// agents:read, conversations:write, approvals:write
+  scopes     String[]
+  /// Agents the key may use; empty = every agent the user may use.
+  agentIds   String[]  @map("agent_ids") @db.Uuid
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(3)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([userId, createdAt])
+  @@map("api_keys")
 }

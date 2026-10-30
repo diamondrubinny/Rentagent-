@@ -30,7 +30,11 @@ You keep the rights to what you enter. You allow us to process it to provide the
 
 Agent tasks are paid with credits. Prices are shown before you start a task: either a fixed price per completed task or usage-based pricing with a maximum per task. Credits reserved for a task and not used are returned to your balance. Payments are processed by {{#stripe}}Stripe{{/stripe}}{{#stripe}}{{#paypal}} and {{/paypal}}{{/stripe}}{{#paypal}}PayPal{{/paypal}}. Subscriptions renew automatically until you cancel them in your account; cancellation takes effect at the end of the paid period. Refunds: [operator: describe the refund policy and statutory withdrawal rights that apply].
 
-{{/billing}}## 7. Availability and changes
+{{/billing}}{{#publicApi}}## API
+
+If you use the API, keep your keys secret: you are responsible for everything done with them, including runs billed to your account and data you send. Use keys only from servers you control, not in public web pages or apps. We may limit request rates and revoke keys that are misused or exposed. The API may change; we will announce incompatible changes in advance.
+
+{{/publicApi}}## 7. Availability and changes
 
 We work to keep the service available but cannot guarantee uninterrupted operation. We may change or discontinue features; we will give notice of important changes.
 
